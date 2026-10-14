@@ -1,0 +1,37 @@
+{
+  "name": "probex",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ProbeX Runtime Debugger",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "verify": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
+    "verify:fix": "pnpm lint:fix && pnpm format"
+  },
+  "keywords": [],
+  "author": "Artem Horovyi",
+  "license": "MIT",
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@probex/configs": "workspace:*",
+    "@types/node": "^26.1.2",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^10.8.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.5",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  }
+}

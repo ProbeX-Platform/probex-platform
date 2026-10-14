@@ -1,0 +1,24 @@
+{
+  "name": "@probex/sdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --watch src/index.ts",
+    "clear": "rm -rf ./dist",
+    "build": "pnpm clear && tsc -b",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "Artem Horovyi",
+  "license": "MIT",
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@probex/configs": "workspace:*"
+  }
+}

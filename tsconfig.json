@@ -1,0 +1,3 @@
+{
+  "references": [{ "path": "./packages/sdk" }, { "path": "./packages/connector" }, { "path": "./examples/node-basic" }],
+}
