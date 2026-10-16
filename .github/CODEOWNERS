@@ -1,1 +1,23 @@
-* @artem-horovyi
+*                       @artem-horovyi
+
+# Repo governance and CI
+/.github/               @artem-horovyi
+/SECURITY.md            @artem-horovyi
+/LICENSE                @artem-horovyi
+
+# Testing
+/examples/              @artem-horovyi
+
+# Packages
+/packages/configs/      @artem-horovyi
+/packages/sdk/          @artem-horovyi
+/packages/protocol/     @artem-horovyi
+
+# AI agent instructions and hooks
+/CLAUDE.md              @artem-horovyi
+/.claude/               @artem-horovyi
+
+# Package-level owners
+/pnpm-lock.yaml         @artem-horovyi
+/pnpm-workspace.yaml    @artem-horovyi
+**/package.json         @artem-horovyi
