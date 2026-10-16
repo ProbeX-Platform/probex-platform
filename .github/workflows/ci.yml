@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+    # `edited` re-runs the PR title check after a rename
+    types: [opened, synchronize, reopened, edited]
     branches:
       - main
       - staging
