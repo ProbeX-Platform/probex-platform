@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p .",
     "test": "vitest run",
     "test:watch": "vitest --coverage",
     "lint": "eslint .",
@@ -15,7 +15,8 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "verify": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
-    "verify:fix": "pnpm lint:fix && pnpm format"
+    "verify:fix": "pnpm lint:fix && pnpm format",
+    "triage": "tsx scripts/triage.ts"
   },
   "keywords": [],
   "author": "Artem Horovyi",

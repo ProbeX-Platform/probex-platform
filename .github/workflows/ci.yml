@@ -30,6 +30,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Branch and PR title
+        if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
+        env:
+          BRANCH: ${{ github.head_ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: pnpm exec tsx scripts/check-names.ts
+
       - name: Linter
         run: pnpm lint
 

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm verify*)",
+      "Bash(pnpm triage*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm lint*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "deny": [
+      "Edit(/pnpm-lock.yaml)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/node_modules/.bin/tsx \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-git.ts",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/node_modules/.bin/tsx \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-file.ts",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/node_modules/.bin/tsx \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-triage.ts",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}

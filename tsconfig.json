@@ -1,3 +1,15 @@
 {
+  "extends": "@probex/configs/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "*.ts",
+    "scripts",
+    ".claude/hooks",
+    "packages/*/vitest.config.ts",
+    "examples/*/vitest.config.ts",
+    "examples/*/tests"
+  ],
   "references": [{ "path": "./packages/sdk" }, { "path": "./packages/connector" }, { "path": "./examples/node-basic" }]
 }
