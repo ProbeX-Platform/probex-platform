@@ -27,15 +27,15 @@ Dependencies point down this table only. Never create `packages/protocol` withou
 
 Use `/task` for any ticket. In short: plan → implement with tests → `pnpm triage` → act on its actions → propose a commit message.
 
-| triage action          | do                                                    |
-| ---------------------- | ----------------------------------------------------- |
-| `fix-checks`           | fix the failing check                                 |
-| `write-tests`          | write the missing tests yourself                      |
-| `delegate-unit-tester` | delegate to the `unit-tester` agent                   |
-| `review`               | delegate to the `reviewer` agent                      |
-| `adr`                  | ask the user whether the change needs an ADR (`/adr`) |
-| `docs`                 | update `docs/api/` for the changed public API         |
-| `e2e`                  | tell the user; there is no e2e suite yet              |
+| triage action          | do                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| `fix-checks`           | fix the failing check                                                             |
+| `write-tests`          | write the missing tests yourself                                                  |
+| `delegate-unit-tester` | delegate to the `unit-tester` agent                                               |
+| `review`               | delegate to the `reviewer` agent                                                  |
+| `adr`                  | ask the user whether there was a real design choice; if yes, suggest `/architect` |
+| `docs`                 | update `docs/api/` for the changed public API                                     |
+| `e2e`                  | tell the user; there is no e2e suite yet                                          |
 
 Hooks format every edited file and run triage before you finish; fix what they report instead of arguing with it.
 
@@ -44,14 +44,14 @@ Hooks format every edited file and run triage before you finish; fix what they r
 - The SDK must never crash, throw into, or block the host app.
 - Packages import each other only by package name, never by relative path.
 - Protocol changes are backward-compatible or bump the protocol version.
-- Architecture decisions are recorded as ADRs in the same PR.
+- `docs/architecture/` holds only decided designs; an ADR records why, only when there was a real choice.
 - Branches: `<type>/<kebab-case>` (≤ 50 chars), e.g. `feat/breakpoint-snapshot`.
 - Commits and PR titles: Conventional Commits, ≤ 72 chars. PRs are squash-merged, so the PR title becomes the commit.
 - Never commit or push unless asked; propose the commit message instead. Never edit `pnpm-lock.yaml` by hand.
 
 ## Docs
 
-- `docs/development.md` — project structure, tooling and workflow for humans.
+- `docs/development.md`, `docs/tooling.md` — workflow and what every script and hook does.
 - `docs/vision.md` — goals and principles.
 - `docs/adr/` — decisions; read the relevant ones before changing architecture.
 - `docs/architecture/`, `docs/api/` — component design and public API.

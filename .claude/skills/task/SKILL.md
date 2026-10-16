@@ -28,16 +28,16 @@ Every acceptance criterion becomes a test. Follow `.claude/rules/`.
 
 Run `pnpm triage --json` and act on every action:
 
-| action                 | do                                                                   |
-| ---------------------- | -------------------------------------------------------------------- |
-| `none`                 | go to step 5                                                         |
-| `fix-checks`           | fix, re-run triage                                                   |
-| `write-tests`          | write the missing tests yourself, re-run triage                      |
-| `delegate-unit-tester` | delegate to `unit-tester` with the gap files and acceptance criteria |
-| `adr`                  | ask the user whether this needs an ADR; if yes, `/adr`               |
-| `docs`                 | update `docs/api/` for the changed exports                           |
-| `e2e`                  | tell the user which flow is affected; there is no e2e suite yet      |
-| `review`               | delegate to `reviewer`, fix blockers and majors, re-run triage       |
+| action                 | do                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| `none`                 | go to step 5                                                                                       |
+| `fix-checks`           | fix, re-run triage                                                                                 |
+| `write-tests`          | write the missing tests yourself, re-run triage                                                    |
+| `delegate-unit-tester` | delegate to `unit-tester` with the gap files and acceptance criteria                               |
+| `adr`                  | ask the user whether there was a real design choice; if yes, stop and suggest `/architect <topic>` |
+| `docs`                 | update `docs/api/` for the changed exports                                                         |
+| `e2e`                  | tell the user which flow is affected; there is no e2e suite yet                                    |
+| `review`               | delegate to `reviewer`, fix blockers and majors, re-run triage                                     |
 
 If there is no `review` action, run `/simplify` on the diff instead.
 

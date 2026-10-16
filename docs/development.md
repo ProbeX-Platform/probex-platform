@@ -1,6 +1,7 @@
 # Development guide
 
 How the repository is organized, which checks protect it and how to work in it, with or without Claude Code.
+Every script, hook and config is described in detail in the [tooling reference](tooling.md).
 
 ## Project structure
 
@@ -14,6 +15,7 @@ probex/
 ├── docs/
 │   ├── vision.md           goals and principles
 │   ├── development.md      this file
+│   ├── tooling.md          what every script, hook and config does
 │   ├── glossary.md         one name per concept
 │   ├── adr/                architecture decision records + template + index
 │   ├── architecture/       component design
@@ -108,12 +110,11 @@ Everything Claude-specific lives in `.claude/` and `CLAUDE.md`. Model choice is 
 
 ### Skills (you start them)
 
-| Command              | Use it for                                                                          |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `/task <ticket>`     | any ticket: size it, plan, implement with tests, triage, hand over a commit message |
-| `/architect <topic>` | discuss an architecture question; ends with an ADR                                  |
-| `/adr <title>`       | write an ADR from the current conversation                                          |
-| `/ticket <idea>`     | turn a raw idea into Problem / Acceptance / Out of scope / Context                  |
+| Command              | Use it for                                                                                |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| `/ticket <idea>`     | discuss a raw idea until it is a ready ticket with acceptance criteria and context        |
+| `/architect <topic>` | discuss an open design question; writes the design doc and, if there was a choice, an ADR |
+| `/task <ticket>`     | any ticket: size it, plan, implement with tests, triage, hand over a commit message       |
 
 ### Agents (Claude delegates to them)
 
@@ -134,11 +135,35 @@ Everything Claude-specific lives in `.claude/` and `CLAUDE.md`. Model choice is 
 A hook that passes is silent and costs no tokens. The Stop hook skips the run when nothing changed since the last
 green triage.
 
+## Architecture docs and ADRs
+
+| Where                         | Contains                                                  | Changes                                             |
+| ----------------------------- | --------------------------------------------------------- | --------------------------------------------------- |
+| `docs/architecture/<part>.md` | the decided design only: what it is, boundaries, flows    | updated whenever the design changes                 |
+| `docs/adr/NNNN-*.md`          | why: requirements, options considered, why the winner won | never edited once accepted; superseded by a new ADR |
+
+An ADR is written only when there was a real choice: at least two viable options and a decision that is costly to
+reverse. Example: "WebSocket or HTTP between SDK and connector?" goes through `/architect`. The result is a
+transport section in `docs/architecture/sdk.md` describing how the WebSocket connection works, and
+`docs/adr/0002-use-websocket-for-sdk-transport.md` explaining why HTTP polling and SSE lost. A choice with no real
+alternative only updates the architecture doc.
+
 ## Typical flow
 
-1. `/ticket <idea>` → review the ticket (optional).
-2. `/task <ticket>` → Claude creates the branch, plans (stops for approval on large tasks), implements with tests.
-3. Hooks keep files formatted; the Stop hook makes Claude fix red checks and coverage gaps.
-4. Claude follows triage actions: tests, review, ADR question, docs.
-5. You read the diff and commit with the proposed message, then open a PR.
-6. CI runs; a code owner approves; squash merge.
+```text
+idea ──/ticket──▶ ready ticket ──/task──▶ branch, plan, code + tests ──▶ triage green ──▶ you commit, PR, merge
+                      │                        │
+                      └── open design question ┴──▶ /architect ──▶ architecture doc (+ ADR)
+```
+
+1. `/ticket <idea>`: Claude asks questions in rounds until the ticket has a clear problem, behavior, acceptance
+   criteria and technical context.
+2. If the ticket hides an open design question, `/architect <topic>` settles it first.
+3. `/task <ticket>`: Claude creates the branch, plans (stops for approval on large tasks), implements with tests.
+4. Hooks keep files formatted; the Stop hook makes Claude fix red checks and coverage gaps.
+5. Claude follows triage actions: tests, review, ADR question, docs, and ends with a proposed commit message.
+6. You read the diff, commit, open a PR. CI runs, a code owner approves, squash merge.
+
+For long discussions (`/ticket`, `/architect`) switch to plan mode (Shift+Tab) so the whole conversation runs on the
+planning model (skill `model` settings apply only to the first reply). Leave plan mode when it is time to write
+the ticket or the docs.
