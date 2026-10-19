@@ -33,13 +33,13 @@ The host app opens no ports.
 
 ## Packages
 
-| Package               | Runs in  | Holds                                                         | Depends on        |
-| --------------------- | -------- | ------------------------------------------------------------- | ----------------- |
-| `packages/configs`    | dev only | shared tsconfig, ESLint, Prettier, Vitest presets             | -                 |
-| `packages/shared`     | -        | `Connector` interface, protocol messages and protocol version | -                 |
-| `packages/connector`  | host app | default connector over WebSocket                              | shared            |
-| `packages/sdk`        | host app | debugger core; uses the default connector unless one is given | shared, connector |
-| `examples/node-basic` | demo     | demo app                                                      | sdk               |
+| Package               | Runs in  | Holds                                                                                    | Depends on        |
+| --------------------- | -------- | ---------------------------------------------------------------------------------------- | ----------------- |
+| `packages/configs`    | dev only | shared tsconfig, ESLint, Prettier, Vitest presets                                        | -                 |
+| `packages/shared`     | -        | public types: `Connector`, protocol messages, `Breakpoint`, `Snapshot`, protocol version | -                 |
+| `packages/connector`  | host app | default connector over WebSocket                                                         | shared            |
+| `packages/sdk`        | host app | debugger core; uses the default connector unless one is given                            | shared, connector |
+| `examples/node-basic` | demo     | demo app                                                                                 | sdk               |
 
 The SDK is the only part that reads configuration: options passed in code and environment variables, with code
 winning over environment. It reads `process.env` only; loading `.env` files is the host app's job. With the hub
@@ -66,3 +66,5 @@ configuration; the host app then configures that connector itself.
 
 - [ADR 0001](../adr/0001-use-websocket-for-connector-to-hub-transport.md) — WebSocket between connector and hub.
 - [ADR 0002](../adr/0002-authenticate-connectors-with-per-service-api-tokens.md) — per-service API tokens.
+- [ADR 0003](../adr/0003-use-a-message-level-interface-for-connectors.md) — message-level `Connector` interface.
+- [ADR 0004](../adr/0004-represent-snapshot-variables-as-a-nested-tree.md) — snapshot variables as a nested tree.

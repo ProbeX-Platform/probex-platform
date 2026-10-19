@@ -13,7 +13,7 @@ pnpm monorepo, Node >= 22, TypeScript (strict, NodeNext), Vitest, ESLint, Pretti
 | Package               | Role                                           | May depend on     |
 | --------------------- | ---------------------------------------------- | ----------------- |
 | `packages/configs`    | shared tsconfig / eslint / prettier / vitest   | -                 |
-| `packages/shared`     | types and constants used by 2+ packages        | -                 |
+| `packages/shared`     | public types, protocol and constants           | -                 |
 | `packages/connector`  | default transport from sdk to the hub          | shared            |
 | `packages/sdk`        | debugger core on `node:inspector`, in host app | shared, connector |
 | `examples/node-basic` | demo app                                       | sdk               |

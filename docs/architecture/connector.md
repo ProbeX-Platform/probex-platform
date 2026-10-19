@@ -11,7 +11,8 @@ outbound WebSocket, from inside the host app.
 - Does not own: configuration, breakpoints or snapshot content (the [SDK](sdk.md)), message types
   (`@probex/shared`).
 - Gets every input as parameters from the SDK; reads no environment variables and no files.
-- Implements the `Connector` interface from `@probex/shared`; a custom connector replaces it as a whole.
+- Implements the message-level `Connector` interface from `@probex/shared`; a custom connector replaces it as a
+  whole.
 - Opens no ports in the host app and has no runtime dependencies: it uses the global `WebSocket` of Node.js.
 - Never throws into the host app: every failure is logged and the connector stays inert.
 
@@ -42,7 +43,8 @@ sequenceDiagram
    TLS certificate, optionally against a custom CA.
 3. It sends `hello`: protocol version, token, service name, instance id and labels. The token is never put in the
    URL and never logged.
-4. If the hub rejects it, the connector logs the reason, backs off with jitter and retries; the SDK stays inert.
+4. If the hub answers with `reject` (unsupported protocol version, invalid token), the connector logs the reason,
+   backs off with jitter and retries; the SDK stays inert.
 5. If the hub accepts it, the hub sends `sync` and the connector passes it to the SDK. This runs on the first
    connect and on every reconnect.
 
@@ -64,3 +66,4 @@ When the queue is full, the oldest message is dropped. A message is deleted from
 
 - [ADR 0001](../adr/0001-use-websocket-for-connector-to-hub-transport.md) — WebSocket between connector and hub.
 - [ADR 0002](../adr/0002-authenticate-connectors-with-per-service-api-tokens.md) — per-service API tokens.
+- [ADR 0003](../adr/0003-use-a-message-level-interface-for-connectors.md) — message-level `Connector` interface.
