@@ -6,17 +6,28 @@ paths:
 
 # Docs
 
-The reader is a developer integrating ProbeX, not us. Write for someone who has not seen the code.
+The reader is a developer integrating ProbeX, not us. Write for someone who has not seen the code. Short beats
+complete: a doc that takes more than a few minutes to read gets split.
 
 - One `#` title per file, ≤ 60 chars. Sentence case.
-- Use terms from `docs/glossary.md`; add new terms there instead of inventing synonyms.
+- One name per concept, the same in code and docs.
 - Link, do not repeat: point to the ADR for "why", to `docs/api/` for "how to use".
 - Code blocks always declare a language. Relative links between docs.
-- `docs/api/<package>.md`: per exported symbol: signature, parameters, return value, errors, minimal example.
-- `docs/architecture/<component>.md` describes only the decided design: purpose, boundaries, what it talks to
-  (Mermaid diagram), key flows, and links to the ADRs behind it.
-  - No alternatives, no "we considered", no open questions. Undecided topics go to `/architect` first.
-  - When a decision changes, update the doc to the new design; the history lives in the ADRs.
+- Keep each file's section structure below; write `None yet.` under a section that has no content.
+
+## `docs/architecture/`
+
+Only the decided design. No alternatives, no "we considered", no open questions: undecided topics go to
+`/architect`. When a decision changes, rewrite the doc to the new design; the history lives in the ADRs.
+
+`overview.md` has the sections Components (Mermaid diagram), Packages, Key flows, Decisions (ADR links).
+`<component>.md` has the sections Purpose, Boundaries, Interactions (Mermaid diagram), Key flows, Decisions.
+
+## `docs/api/<package>.md`
+
+Sections Installation and Exports. Under Exports, one `###` per exported symbol: signature, parameters, return
+value, errors, minimal example. A renamed or removed export keeps a one-line note with the new name until the next
+major version.
 
 ```md
 <!-- Bad: discussion in an architecture doc -->

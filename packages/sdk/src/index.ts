@@ -1,1 +1,1 @@
-console.log("SDK Runtime");
+export {};

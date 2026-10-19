@@ -1,14 +1,17 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "opusplan",
   "permissions": {
     "allow": [
       "Bash(pnpm verify*)",
-      "Bash(pnpm triage*)",
       "Bash(pnpm test*)",
       "Bash(pnpm lint*)",
+      "Bash(pnpm format*)",
+      "Bash(pnpm typecheck*)",
       "Bash(git status*)",
       "Bash(git diff*)",
-      "Bash(git log*)"
+      "Bash(git log*)",
+      "Bash(.claude/scripts/impact.sh*)"
     ],
     "deny": [
       "Edit(/pnpm-lock.yaml)",
@@ -16,42 +19,29 @@
       "Bash(git push -f*)",
       "Bash(git push * --force*)",
       "Bash(git push * -f)",
-      "Bash(git push * -f *)"
+      "Bash(git push * -f *)",
+      "Bash(gh pr merge*)"
     ]
   },
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/node_modules/.bin/tsx \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-git.ts",
-            "timeout": 30
-          }
-        ]
+        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-git.sh", "timeout": 10 }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/node_modules/.bin/tsx \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-file.ts",
-            "timeout": 60
-          }
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-file.sh", "timeout": 60 }
         ]
       }
     ],
     "Stop": [
       {
         "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/node_modules/.bin/tsx \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-triage.ts",
-            "timeout": 300
-          }
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-verify.sh", "timeout": 300 }
         ]
       }
     ]
