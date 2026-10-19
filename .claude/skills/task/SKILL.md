@@ -1,48 +1,26 @@
 ---
-description: Take a ticket from text or link to a verified, ready-to-commit change.
-argument-hint: <ticket text or link>
+description: Discuss a piece of work and create a ready-to-implement card in the tracker's Backlog.
+argument-hint: <topic>
 disable-model-invocation: true
+model: opus
+effort: high
 ---
 
-Ticket: $ARGUMENTS
+Topic: $ARGUMENTS
 
-If the ticket is a link, read it first (Trello via the Trello tools, GitHub via `gh`). If it has no acceptance
-criteria, write them down and confirm with the user before coding.
+Goal: a card that `/do-task` or another developer can implement without coming back with questions.
+This is a conversation, one step per reply. Do not implement anything.
 
-## 1. Size it
-
-- **S** — ≤ 2 files, behavior is clear: do it.
-- **M** — several files, clear goal: write a 3–6 line plan inline, then do it.
-- **L** — architecture, ambiguity, protocol or public API change, new package or dependency: write a plan
-  and STOP for approval. Suggest `/architect` if the design itself is open.
-
-## 2. Branch
-
-If on `main`/`staging`, create `<type>/<kebab-case>` (≤ 50 chars) from an up-to-date `main`.
-
-## 3. Implement with tests
-
-Every acceptance criterion becomes a test. Follow `.claude/rules/`.
-
-## 4. Triage
-
-Run `pnpm triage --json` and act on every action:
-
-| action                 | do                                                                                                 |
-| ---------------------- | -------------------------------------------------------------------------------------------------- |
-| `none`                 | go to step 5                                                                                       |
-| `fix-checks`           | fix, re-run triage                                                                                 |
-| `write-tests`          | write the missing tests yourself, re-run triage                                                    |
-| `delegate-unit-tester` | delegate to `unit-tester` with the gap files and acceptance criteria                               |
-| `adr`                  | ask the user whether there was a real design choice; if yes, stop and suggest `/architect <topic>` |
-| `docs`                 | update `docs/api/` for the changed exports                                                         |
-| `e2e`                  | tell the user which flow is affected; there is no e2e suite yet                                    |
-| `review`               | delegate to `reviewer`, fix blockers and majors, re-run triage                                     |
-
-If there is no `review` action, run `/simplify` on the diff instead.
-
-## 5. Hand over
-
-Do not commit or push unless the user asked. Report in 3–5 lines: what changed, which checks passed, coverage of
-changed files, and anything left for the user (ADR decision, e2e, follow-ups). End with a proposed commit message
-(Conventional Commits, subject ≤ 72 chars) in a code block.
+1. **Understand.** Read the related code, docs and ADRs (use the Explore agent). Restate the topic in two sentences:
+   who has which problem and what changes for them.
+2. **Discuss.** Ask in rounds of at most 4 questions (AskUserQuestion, concrete options):
+   - who needs it and why now;
+   - expected behavior, including edge cases and what happens on failure;
+   - constraints: overhead in the host app, public API or protocol compatibility, security;
+   - what is explicitly out of scope.
+3. **Draft and challenge.** Propose acceptance criteria and point out what is missing or untestable. Repeat 2–3
+   until the user confirms nothing is missing.
+4. **Architecture check.** An open design question (for example "WebSocket or HTTP?") → stop and suggest
+   `/architect` first. The card then links the resulting doc or ADR.
+5. **Create.** Show the card filled from `.claude/templates/card.md`. Once the user confirms, create it in the
+   **Backlog** list of the tracker in `CLAUDE.md` and print its link. Never put a card anywhere but Backlog.

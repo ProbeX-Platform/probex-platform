@@ -13,10 +13,10 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "tsx --watch src/index.ts",
+    "dev": "tsx --conditions=@probex/source --watch src/index.ts",
     "clear": "rm -rf ./dist",
     "build": "pnpm clear && tsc -b",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "test": "vitest run"
   },
   "keywords": [],
@@ -25,6 +25,9 @@
   "packageManager": "pnpm@10.26.2",
   "engines": {
     "node": ">=22"
+  },
+  "dependencies": {
+    "@probex/shared": "workspace:*"
   },
   "devDependencies": {
     "@probex/configs": "workspace:*"

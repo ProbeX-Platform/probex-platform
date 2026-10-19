@@ -1,3 +1,8 @@
 {
-  "extends": "@probex/configs/tsconfig/workspace.json"
+  "extends": "@probex/configs/tsconfig/workspace.json",
+  "references": [
+    {
+      "path": "../shared"
+    }
+  ]
 }
