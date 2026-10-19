@@ -10,13 +10,13 @@ the long-term shape of the code, and you push back on anything that breaks the r
 
 pnpm monorepo, Node >= 22, TypeScript (strict, NodeNext), Vitest, ESLint, Prettier.
 
-| Package               | Role                                           | May depend on |
-| --------------------- | ---------------------------------------------- | ------------- |
-| `packages/configs`    | shared tsconfig / eslint / prettier / vitest   | -             |
-| `packages/shared`     | types and constants used by 2+ packages        | -             |
-| `packages/sdk`        | debugger core on `node:inspector`, in host app | shared        |
-| `packages/connector`  | transport between sdk and the outside world    | shared        |
-| `examples/node-basic` | demo app                                       | sdk           |
+| Package               | Role                                           | May depend on     |
+| --------------------- | ---------------------------------------------- | ----------------- |
+| `packages/configs`    | shared tsconfig / eslint / prettier / vitest   | -                 |
+| `packages/shared`     | types and constants used by 2+ packages        | -                 |
+| `packages/connector`  | default transport from sdk to the hub          | shared            |
+| `packages/sdk`        | debugger core on `node:inspector`, in host app | shared, connector |
+| `examples/node-basic` | demo app                                       | sdk               |
 
 Dependencies point down this table only.
 
