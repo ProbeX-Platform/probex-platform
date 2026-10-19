@@ -18,7 +18,8 @@ complete: a doc that takes more than a few minutes to read gets split.
 ## `docs/architecture/`
 
 Only the decided design. No alternatives, no "we considered", no open questions: undecided topics go to
-`/architect`. When a decision changes, rewrite the doc to the new design; the history lives in the ADRs.
+`/architect`. When a decision changes, rewrite the doc to the new design; the history lives in the ADRs. A draft
+made from `.claude/templates/architecture.md` is input for `/architect` only and is never merged as a draft.
 
 `overview.md` has the sections Components (Mermaid diagram), Packages, Key flows, Decisions (ADR links).
 `<component>.md` has the sections Purpose, Boundaries, Interactions (Mermaid diagram), Key flows, Decisions.
