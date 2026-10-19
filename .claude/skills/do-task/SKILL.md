@@ -14,6 +14,7 @@ Board and lists: the Tracker section of `CLAUDE.md`. Card format: `.claude/templ
   `Started by Claude · branch <name>` comment and that branch exists locally (resume it).
 - No link: take the top card of **Planned**. Planned is empty → stop.
 - Anything else (someone else's In Progress, In Review, Done, Backlog) → stop and say why. Never move or edit those.
+- The card's "Depends on" lists a card that is not in **Done** → stop and name it.
 
 ## 2. Clarify
 

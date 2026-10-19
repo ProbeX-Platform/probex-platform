@@ -22,6 +22,7 @@ What changes from the user's point of view, including failure cases.
 
 ## Technical context
 
+- Depends on: links to cards that must be done first, or none.
 - Affected packages and files (`path:line`), related ADRs and docs.
 - Public API or protocol impact, risks.
 
