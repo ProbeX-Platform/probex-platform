@@ -5,22 +5,19 @@ paths:
 
 # ADRs
 
-An ADR answers "why this and not that". Write one only when there was a real choice: at least two viable options
-and a decision that is costly to reverse. An obvious or easily reversible choice goes straight into the docs.
+An ADR answers "why this and not that" for developers and companies using ProbeX. Write one only when there was a
+real choice: at least two viable options and a decision that is costly to reverse. An obvious or easily reversible
+choice goes straight into `docs/architecture/`.
 
-The decided design itself lives in `docs/architecture/` (see `.claude/rules/docs.md`); the ADR holds the reasoning.
-
-- File `docs/adr/NNNN-kebab-title.md`, next free number, no gaps. Copy `docs/adr/0000-template.md`.
+- File `docs/adr/NNNN-kebab-title.md`, next free number, no gaps. Copy `docs/adr/0000-template.md` and keep its
+  sections in order: Status, Context, Decision, Alternatives, Consequences.
 - First heading `# NNNN. Title`; the title is ≤ 60 chars and names the decision, not the topic.
-- Sections in order: Status, Context, Decision, Alternatives, Consequences.
 - Status line: `<status> · YYYY-MM-DD`, where status is `Proposed`, `Accepted`, `Deprecated` or
   `Superseded by [NNNN](NNNN-title.md)`.
 - Context: the requirements and constraints that made the choice necessary.
 - Decision: one or two sentences in active voice: "We use X for Y."
 - Alternatives: every rejected option with the concrete reason it lost.
 - Never rewrite an accepted ADR: write a new one and mark the old one superseded.
-- Add the ADR to the index in `docs/adr/README.md` in the same change.
-- `pnpm triage` validates all of the above.
 
 ```md
 <!-- Bad: topic as title, no alternatives -->

@@ -9,6 +9,7 @@ export default defineConfig({
       include: ["packages/*/src/**/*.ts"],
       exclude: ["**/*.test.ts"],
       reporter: ["text-summary", "json-summary"],
+      thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 },
     },
   },
 });

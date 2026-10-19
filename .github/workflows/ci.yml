@@ -18,6 +18,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so every commit of the PR can be checked
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -32,12 +35,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Branch and PR title
+      - name: Branch, PR title and commits
         if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
         env:
           BRANCH: ${{ github.head_ref }}
           TITLE: ${{ github.event.pull_request.title }}
-        run: pnpm exec tsx scripts/check-names.ts
+          RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        run: |
+          types='feat|fix|chore|docs|refactor|test|perf|build|ci|revert'
+          subject="^($types)(\([a-z0-9-]+\))?!?: [^ ]"
+          ok=true
+          if [[ $BRANCH != staging ]] && { [[ ! $BRANCH =~ ^($types)/[a-z0-9]+(-[a-z0-9]+)*$ ]] || ((${#BRANCH} > 50)); }; then
+            echo "::error::branch '$BRANCH' must be <type>/<kebab-case>, ≤ 50 chars"; ok=false
+          fi
+          # Merge commits keep every commit in history, so each subject must follow the same rule as the title
+          while IFS= read -r line; do
+            if [[ ! $line =~ $subject ]] || ((${#line} > 72)); then
+              echo "::error::'$line' must be a Conventional Commit, ≤ 72 chars"; ok=false
+            fi
+          done < <(printf '%s\n' "$TITLE"; git log --no-merges --format=%s "$RANGE")
+          $ok
 
       - name: Linter
         run: pnpm lint
@@ -48,8 +65,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Tests
-        run: pnpm test
+      - name: Tests and coverage
+        run: pnpm test:coverage
 
       - name: Build
         run: pnpm build

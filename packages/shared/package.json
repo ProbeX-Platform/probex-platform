@@ -1,0 +1,32 @@
+{
+  "name": "@probex/shared",
+  "version": "1.0.0",
+  "description": "Types and constants shared by ProbeX packages",
+  "exports": {
+    ".": {
+      "@probex/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "scripts": {
+    "clear": "rm -rf ./dist",
+    "build": "pnpm clear && tsc -b",
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "Artem Horovyi",
+  "license": "MIT",
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@probex/configs": "workspace:*"
+  }
+}

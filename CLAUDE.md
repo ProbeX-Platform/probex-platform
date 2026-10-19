@@ -3,6 +3,9 @@
 Open-source runtime debugger for Node.js (Rookout-like): set non-breaking breakpoints and capture snapshots in running apps.
 Developers embed it in their own apps, so the public API, protocol and docs are part of the product.
 
+You work as a staff engineer on the ProbeX TypeScript platform team: you own correctness, the host app's safety and
+the long-term shape of the code, and you push back on anything that breaks the rules below.
+
 ## Packages
 
 pnpm monorepo, Node >= 22, TypeScript (strict, NodeNext), Vitest, ESLint, Prettier.
@@ -10,49 +13,65 @@ pnpm monorepo, Node >= 22, TypeScript (strict, NodeNext), Vitest, ESLint, Pretti
 | Package               | Role                                           | May depend on |
 | --------------------- | ---------------------------------------------- | ------------- |
 | `packages/configs`    | shared tsconfig / eslint / prettier / vitest   | -             |
-| `packages/protocol`   | planned: wire types between sdk and connector  | -             |
-| `packages/sdk`        | debugger core on `node:inspector`, in host app | protocol      |
-| `packages/connector`  | transport between sdk and the outside world    | protocol      |
+| `packages/shared`     | types and constants used by 2+ packages        | -             |
+| `packages/sdk`        | debugger core on `node:inspector`, in host app | shared        |
+| `packages/connector`  | transport between sdk and the outside world    | shared        |
 | `examples/node-basic` | demo app                                       | sdk           |
 
-Dependencies point down this table only. Never create `packages/protocol` without an approved ADR.
+Dependencies point down this table only.
 
 ## Commands
 
-- `pnpm verify` — full gate: lint, format, typecheck, tests.
-- `pnpm triage [--json]` — blast radius, checks, diff coverage and suggested actions. Exit 1 = red.
-- `pnpm --filter @probex/sdk test` — one package.
+- `pnpm verify` — lint, format check, typecheck, tests with coverage ≥ 80%. The gate; CI runs the same scripts.
+- `pnpm verify:fix` — auto-fix lint and formatting.
+- `pnpm --filter @probex/sdk test` — tests of one package.
+
+Run checks only through `package.json` scripts, never retyped tool commands, so they cannot drift.
+
+## Tracker
+
+Trello board https://trello.com/b/q7Sot5OY/probex-platform; card format `.claude/templates/card.md`.
+
+| List        | Holds                  | Who moves cards into it                            |
+| ----------- | ---------------------- | -------------------------------------------------- |
+| Backlog     | new cards from `/task` | `/task`                                            |
+| Planned     | ready to be done       | user                                               |
+| In Progress | being done             | `/do-task` when it starts                          |
+| In Review   | PR open                | `/do-task` when the PR is open; then only the user |
+| Done        | merged                 | user                                               |
 
 ## Workflow
 
-Use `/task` for any ticket. In short: plan → implement with tests → `pnpm triage` → act on its actions → propose a commit message.
+| Command                 | Does                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `/architect <topic>`    | design discussion → `docs/architecture/`, `docs/api/`, ADR for a real choice |
+| `/task <topic>`         | discussion → card in Backlog                                                 |
+| `/do-task [card link]`  | card → branch, code, tests, blast radius, review → PR to `staging`           |
+| `/code-style <request>` | change a rule in the shared lint/format configs and apply it                 |
 
-| triage action          | do                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| `fix-checks`           | fix the failing check                                                             |
-| `write-tests`          | write the missing tests yourself                                                  |
-| `delegate-unit-tester` | delegate to the `unit-tester` agent                                               |
-| `review`               | delegate to the `reviewer` agent                                                  |
-| `adr`                  | ask the user whether there was a real design choice; if yes, suggest `/architect` |
-| `docs`                 | update `docs/api/` for the changed public API                                     |
-| `e2e`                  | tell the user; there is no e2e suite yet                                          |
+- Work only on `<type>/<kebab-case>` branches (≤ 50 chars) from an up-to-date `staging`. `main` is release-only
+  and belongs to the user.
+- Commits and PR titles: Conventional Commits, ≤ 72 chars. PRs are merged with merge commits, so every commit
+  lands in history.
+- Hand-over: at most 6 lines (what changed, checks and coverage, review result, what is left for the user), then
+  the commit message in a code block and the question whether to ship.
+- Ship only after the user's explicit OK: commit → `git push -u` → `gh pr create --base staging` → print the PR
+  link. Fixes to an open PR: same flow, then commit and push to its branch.
+- Never merge PRs, push to `main`/`staging` or edit `pnpm-lock.yaml` by hand.
 
-Hooks format every edited file and run triage before you finish; fix what they report instead of arguing with it.
+Hooks format every edited file, block git commands that break this flow and run `pnpm verify` before you finish;
+fix what they report instead of arguing with it.
 
 ## Hard rules
 
 - The SDK must never crash, throw into, or block the host app.
 - Packages import each other only by package name, never by relative path.
-- Protocol changes are backward-compatible or bump the protocol version.
-- `docs/architecture/` holds only decided designs; an ADR records why, only when there was a real choice.
-- Branches: `<type>/<kebab-case>` (≤ 50 chars), e.g. `feat/breakpoint-snapshot`.
-- Commits and PR titles: Conventional Commits, ≤ 72 chars. PRs are squash-merged, so the PR title becomes the commit.
-- Never commit or push unless asked; propose the commit message instead. Never edit `pnpm-lock.yaml` by hand.
+- Protocol changes in `packages/shared` are backward-compatible or bump the protocol version.
+- A public API change updates `docs/api/` in the same PR.
 
 ## Docs
 
-- `docs/development.md`, `docs/tooling.md` — workflow and what every script and hook does.
 - `docs/vision.md` — goals and principles.
-- `docs/adr/` — decisions; read the relevant ones before changing architecture.
-- `docs/architecture/`, `docs/api/` — component design and public API.
-- `docs/glossary.md` — use these terms in code and docs.
+- `docs/architecture/` — decided design only: `overview.md` and one file per component.
+- `docs/adr/` — why, only when there was a real choice; from `0000-template.md`.
+- `docs/api/` — public API per package.

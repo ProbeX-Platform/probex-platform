@@ -48,6 +48,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.12.0)
+      '@vitest/eslint-plugin':
+        specifier: ^1.6.27
+        version: 1.6.27(@typescript-eslint/eslint-plugin@8.71.2(@typescript-eslint/parser@8.71.2(eslint@10.12.0)(typescript@6.0.3))(eslint@10.12.0)(typescript@6.0.3))(eslint@10.12.0)(typescript@6.0.3)(vitest@4.1.11)
       eslint-plugin-import-x:
         specifier: ^4.17.1
         version: 4.17.1(@typescript-eslint/utils@8.71.2(eslint@10.12.0)(typescript@6.0.3))(eslint@10.12.0)
@@ -69,12 +72,26 @@ importers:
         version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
 
   packages/connector:
+    dependencies:
+      '@probex/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@probex/configs':
         specifier: workspace:*
         version: link:../configs
 
   packages/sdk:
+    dependencies:
+      '@probex/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@probex/configs':
+        specifier: workspace:*
+        version: link:../configs
+
+  packages/shared:
     devDependencies:
       '@probex/configs':
         specifier: workspace:*
@@ -679,6 +696,22 @@ packages:
       vitest: 4.1.11
     peerDependenciesMeta:
       '@vitest/browser':
+        optional: true
+
+  '@vitest/eslint-plugin@1.6.27':
+    resolution: {integrity: sha512-X1RCAfwbatG4GFbJ/1PIHP9MSZMt0JJThqbYID+vS4L783k6QGlLPe421wQE8dHXuGCcenVLsydiM4qzsYWxhg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@typescript-eslint/eslint-plugin': '*'
+      eslint: '>=8.57.0'
+      typescript: '>=5.0.0'
+      vitest: '*'
+    peerDependenciesMeta:
+      '@typescript-eslint/eslint-plugin':
+        optional: true
+      typescript:
+        optional: true
+      vitest:
         optional: true
 
   '@vitest/expect@4.1.11':
@@ -1928,6 +1961,18 @@ snapshots:
       std-env: 4.3.0
       tinyrainbow: 3.2.0
       vitest: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+
+  '@vitest/eslint-plugin@1.6.27(@typescript-eslint/eslint-plugin@8.71.2(@typescript-eslint/parser@8.71.2(eslint@10.12.0)(typescript@6.0.3))(eslint@10.12.0)(typescript@6.0.3))(eslint@10.12.0)(typescript@6.0.3)(vitest@4.1.11)':
+    dependencies:
+      '@typescript-eslint/scope-manager': 8.71.2
+      '@typescript-eslint/utils': 8.71.2(eslint@10.12.0)(typescript@6.0.3)
+      eslint: 10.12.0
+    optionalDependencies:
+      '@typescript-eslint/eslint-plugin': 8.71.2(@typescript-eslint/parser@8.71.2(eslint@10.12.0)(typescript@6.0.3))(eslint@10.12.0)(typescript@6.0.3)
+      typescript: 6.0.3
+      vitest: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+    transitivePeerDependencies:
+      - supports-color
 
   '@vitest/expect@4.1.11':
     dependencies:
