@@ -30,7 +30,8 @@ Run checks only through `package.json` scripts, never retyped tool commands, so 
 
 ## Tracker
 
-Trello board https://trello.com/b/q7Sot5OY/probex-platform; card format `.claude/templates/card.md`.
+Trello board https://trello.com/b/q7Sot5OY/probex-platform; card format `.claude/templates/card.md`, new
+architecture doc `.claude/templates/architecture.md`.
 
 | List        | Holds                  | Who moves cards into it                            |
 | ----------- | ---------------------- | -------------------------------------------------- |
@@ -42,12 +43,12 @@ Trello board https://trello.com/b/q7Sot5OY/probex-platform; card format `.claude
 
 ## Workflow
 
-| Command                 | Does                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `/architect <topic>`    | design discussion → `docs/architecture/`, `docs/api/`, ADR for a real choice |
-| `/task <topic>`         | discussion → card in Backlog                                                 |
-| `/do-task [card link]`  | card → branch, code, tests, blast radius, review → PR to `staging`           |
-| `/code-style <request>` | change a rule in the shared lint/format configs and apply it                 |
+| Command                    | Does                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| `/architect <doc> [focus]` | draft or decided doc in `docs/architecture/` → decided design, `docs/api/`, ADRs |
+| `/task <topic>`            | discussion → one or more cards in Backlog                                        |
+| `/do-task [card link]`     | card → branch, code, tests, blast radius, review → PR to `staging`               |
+| `/code-style <request>`    | change a rule in the shared lint/format configs and apply it                     |
 
 - Work only on `<type>/<kebab-case>` branches (≤ 50 chars) from an up-to-date `staging`. `main` is release-only
   and belongs to the user.
@@ -72,6 +73,7 @@ fix what they report instead of arguing with it.
 ## Docs
 
 - `docs/vision.md` — goals and principles.
+- `docs/development.md` — setup, commands, branches and pull requests.
 - `docs/architecture/` — decided design only: `overview.md` and one file per component.
 - `docs/adr/` — why, only when there was a real choice; from `0000-template.md`.
 - `docs/api/` — public API per package.
