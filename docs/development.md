@@ -30,8 +30,8 @@ pnpm build      → build in every package, dependencies first
 pnpm typecheck  → typecheck in every package, then the root files and tests
 pnpm test       → one Vitest run over all packages
 pnpm lint       → one ESLint run over the repo
-pnpm format     → one Prettier run over the repo
-pnpm verify     → lint → format:check → typecheck → test:coverage (≥ 80%), stops at the first failure
+pnpm format     → one Prettier check over the repo
+pnpm verify     → lint → format → typecheck → test:coverage (≥ 80%), stops at the first failure
 pnpm verify:fix → auto-fix lint and formatting
 ```
 
@@ -40,7 +40,7 @@ Run one package's tests with `pnpm --filter @probex/sdk test`. CI runs `pnpm ver
 ## Branches and pull requests
 
 - Branch from an up-to-date `staging` as `<type>/<kebab-case>`, ≤ 50 chars; `main` is release-only.
-- Commits and PR titles follow Conventional Commits, ≤ 72 chars. PRs go to `staging` and are merged with merge
+- Commits and PR titles follow Conventional Commits, ≤ 100 chars. PRs go to `staging` and are merged with merge
   commits, so every commit must follow the rule.
 - A public API change updates [docs/api](api/) in the same PR; a design change goes to
   [docs/architecture](architecture/overview.md) and, when there was a real choice, an [ADR](adr/).
