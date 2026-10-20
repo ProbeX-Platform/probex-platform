@@ -26,9 +26,9 @@ made from `.claude/templates/architecture.md` is input for `/architect` only and
 
 ## `docs/api/<package>.md`
 
-Sections Installation and Exports. Under Exports, one `###` per exported symbol: signature, parameters, return
-value, errors, minimal example. A renamed or removed export keeps a one-line note with the new name until the next
-major version.
+Copy `.claude/templates/api.md`. Sections Installation, Exports and Usage. Under Exports, one `###` per exported
+symbol: signature, parameters, return value, errors, minimal example. A renamed or removed export keeps a one-line
+note with the new name until the next major version. Usage shows one end-to-end example of the common case.
 
 ```md
 <!-- Bad: discussion in an architecture doc -->

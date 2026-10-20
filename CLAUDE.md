@@ -31,7 +31,7 @@ Run checks only through `package.json` scripts, never retyped tool commands, so 
 ## Tracker
 
 Trello board https://trello.com/b/q7Sot5OY/probex-platform; card format `.claude/templates/card.md`, new
-architecture doc `.claude/templates/architecture.md`.
+architecture doc `.claude/templates/architecture.md`, new API doc `.claude/templates/api.md`.
 
 | List        | Holds                  | Who moves cards into it                            |
 | ----------- | ---------------------- | -------------------------------------------------- |
@@ -76,4 +76,4 @@ fix what they report instead of arguing with it.
 - `docs/development.md` — setup, commands, branches and pull requests.
 - `docs/architecture/` — decided design only: `overview.md` and one file per component.
 - `docs/adr/` — why, only when there was a real choice; from `.claude/templates/adr.md`.
-- `docs/api/` — public API per package.
+- `docs/api/` — public API per package; from `.claude/templates/api.md`.
