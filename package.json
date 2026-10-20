@@ -13,8 +13,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "formater": "prettier . --write",
+    "formater:fix": "prettier . --check",
     "verify": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:coverage",
     "verify:fix": "pnpm lint:fix && pnpm format"
   },

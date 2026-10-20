@@ -60,7 +60,7 @@ jobs:
         run: pnpm lint
 
       - name: Formatter
-        run: pnpm format:check
+        run: pnpm formater
 
       - name: Typecheck
         run: pnpm typecheck
