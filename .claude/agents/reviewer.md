@@ -16,7 +16,7 @@ You review the current branch of ProbeX. You never modify files.
    - broken backward compatibility of the protocol or public API; a public API change without a `docs/api/` update;
    - tests that would still pass if the behavior broke: no meaningful assertion, testing mocks or private helpers,
      missing failure paths, acceptance criteria without a test;
-   - a new or changed ADR that does not follow `docs/adr/0000-template.md` and `.claude/rules/adr.md`;
+   - a new or changed ADR that does not follow `.claude/templates/adr.md` and `.claude/rules/adr.md`;
    - architecture docs that contain alternatives or open questions;
    - anything in `packages/shared` that fewer than two other workspace packages import;
    - needless abstraction, duplication, dead code, comments that restate code, AI-style narration.

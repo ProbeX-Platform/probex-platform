@@ -5,15 +5,16 @@ set -uo pipefail
 input=$(cat)
 cmd=$(jq -r '.tool_input.command // ""' <<<"$input")
 cwd=$(jq -r '.cwd // "."' <<<"$input")
-types='feat|fix|chore|docs|refactor|test|perf|build|ci|revert'
+# Same branch rules as CI
+source "$(dirname "$0")/../../.github/scripts/check-names.sh"
 git_cmd='(^|[[:space:];&|(])git +'
 problems=()
 
 # New branches: git checkout -b X, git switch -c X, git branch X
 while read -r name; do
   [[ -z $name ]] && continue
-  if [[ ! $name =~ ^($types)/[a-z0-9]+(-[a-z0-9]+)*$ ]] || ((${#name} > 50)); then
-    problems+=("branch \"$name\" must be <type>/<kebab-case>, ≤ 50 chars, type: ${types//|/, }")
+  if ! branch_ok "$name"; then
+    problems+=("branch \"$name\" must be <type>/<kebab-case>, ≤ $max_branch chars: $(branch_problems "$name" | paste -sd';' -)")
   fi
 done < <(grep -oE "${git_cmd}(checkout +-[bB]|switch +(-[cC]|--create)|branch) +[\"']?[^-[:space:];&|\"'][^[:space:];&|\"']*" <<<"$cmd" |
   awk '{print $NF}' | tr -d "\"'")

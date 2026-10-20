@@ -27,7 +27,7 @@ the user copies the template first.
    facts.
 3. **Gaps.** List what the file does not decide yet: open questions, contradictions with other docs or ADRs, missing
    failure cases, sections still empty. With a focus, list only what the focus touches.
-4. **Clarify.** Ask the 2–4 questions whose answers change the design: who consumes it, scale, latency, overhead in
+4. **Clarify.** Ask the 2–6 questions whose answers change the design: who consumes it, scale, latency, overhead in
    the host app, compatibility, operations. Use AskUserQuestion with concrete options. Repeat until the
    requirements are clear, then restate them in a short list and get a confirmation.
 5. **Real choices.** For each point where one option is clearly right and cheap to reverse, say so: no ADR. For each
@@ -40,7 +40,7 @@ the user copies the template first.
    - `docs/architecture/overview.md` and other component docs updated where the design touches them.
    - An ADR for each real choice from step 5, per `.claude/rules/adr.md`.
    - `docs/api/<package>.md` when a public interface changes (for example `debugger.start()` becomes
-     `debugger.run()`), per `.claude/rules/docs.md`.
+     `debugger.run()`), per `.claude/rules/docs.md`; a new package's file from `.claude/templates/api.md`.
    - What is still undecided is not written down: it becomes a follow-up.
 7. **Hand over and ship** per the Workflow section of `CLAUDE.md`. Then list the follow-up work and offer `/task`
    for it.

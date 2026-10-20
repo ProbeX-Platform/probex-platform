@@ -13,10 +13,10 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "verify": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:coverage",
-    "verify:fix": "pnpm lint:fix && pnpm format"
+    "format": "prettier . --check",
+    "format:fix": "prettier . --write",
+    "verify": "pnpm lint && pnpm format && pnpm typecheck && pnpm test:coverage",
+    "verify:fix": "pnpm lint:fix && pnpm format:fix"
   },
   "keywords": [],
   "author": "Artem Horovyi",

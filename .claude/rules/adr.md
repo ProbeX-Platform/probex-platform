@@ -9,7 +9,7 @@ An ADR answers "why this and not that" for developers and companies using ProbeX
 real choice: at least two viable options and a decision that is costly to reverse. An obvious or easily reversible
 choice goes straight into `docs/architecture/`.
 
-- File `docs/adr/NNNN-kebab-title.md`, next free number, no gaps. Copy `docs/adr/0000-template.md` and keep its
+- File `docs/adr/NNNN-kebab-title.md`, next free number, no gaps. Copy `.claude/templates/adr.md` and keep its
   sections in order: Status, Context, Decision, Alternatives, Consequences.
 - First heading `# NNNN. Title`; the title is ≤ 60 chars and names the decision, not the topic.
 - Status line: `<status> · YYYY-MM-DD`, where status is `Proposed`, `Accepted`, `Deprecated` or

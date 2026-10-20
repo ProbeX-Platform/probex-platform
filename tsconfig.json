@@ -8,6 +8,7 @@
     "*.ts",
     "packages/*/vitest.config.ts",
     "packages/*/src/**/*.test.ts",
+    "packages/configs/test",
     "examples/*/vitest.config.ts",
     "examples/*/tests"
   ]

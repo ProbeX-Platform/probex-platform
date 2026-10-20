@@ -31,7 +31,7 @@ Run checks only through `package.json` scripts, never retyped tool commands, so 
 ## Tracker
 
 Trello board https://trello.com/b/q7Sot5OY/probex-platform; card format `.claude/templates/card.md`, new
-architecture doc `.claude/templates/architecture.md`.
+architecture doc `.claude/templates/architecture.md`, new API doc `.claude/templates/api.md`.
 
 | List        | Holds                  | Who moves cards into it                            |
 | ----------- | ---------------------- | -------------------------------------------------- |
@@ -52,8 +52,8 @@ architecture doc `.claude/templates/architecture.md`.
 
 - Work only on `<type>/<kebab-case>` branches (≤ 50 chars) from an up-to-date `staging`. `main` is release-only
   and belongs to the user.
-- Commits and PR titles: Conventional Commits, ≤ 72 chars. PRs are merged with merge commits, so every commit
-  lands in history.
+- Commits and PR titles: Conventional Commits, ≤ 100 chars, types from `docs/development.md`. PRs are merged with
+  merge commits, so every commit lands in history.
 - Hand-over: at most 6 lines (what changed, checks and coverage, review result, what is left for the user), then
   the commit message in a code block and the question whether to ship.
 - Ship only after the user's explicit OK: commit → `git push -u` → `gh pr create --base staging` → print the PR
@@ -75,5 +75,5 @@ fix what they report instead of arguing with it.
 - `docs/vision.md` — goals and principles.
 - `docs/development.md` — setup, commands, branches and pull requests.
 - `docs/architecture/` — decided design only: `overview.md` and one file per component.
-- `docs/adr/` — why, only when there was a real choice; from `0000-template.md`.
-- `docs/api/` — public API per package.
+- `docs/adr/` — why, only when there was a real choice; from `.claude/templates/adr.md`.
+- `docs/api/` — public API per package; from `.claude/templates/api.md`.

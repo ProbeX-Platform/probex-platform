@@ -14,8 +14,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx --conditions=@probex/source --watch src/index.ts",
-    "clear": "rm -rf ./dist",
-    "build": "pnpm clear && tsc -b",
+    "build": "rm -rf ./dist && tsc -b",
     "typecheck": "tsc -b",
     "test": "vitest run"
   },
