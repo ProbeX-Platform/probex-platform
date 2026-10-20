@@ -2,19 +2,51 @@
 # Checks the PR branch, title and commit subjects against docs/development.md#branches-and-pull-requests.
 # Usage: check-names.sh <branch> <pr title> <base sha>..<head sha>
 # Every failure says what is wrong and prints the rules with passing and failing examples.
+# .claude/hooks/guard-git.sh sources this file for the same rules, so it only defines functions when sourced.
 set -uo pipefail
 
-branch=$1 title=$2 range=$3
+# The only allowed types, for branches, PR titles and commits; keep the table in docs/development.md in sync
+types_help='feat      new behavior for users of the packages (minor release)
+fix       bug fix for users of the packages (patch release)
+perf      faster or lighter, same behavior
+refactor  code change with the same behavior
+docs      documentation only
+test      tests only
+build     build, dependencies, package and tool configs
+ci        CI workflows, hooks and their scripts
+chore     anything else that does not reach users
+style     formatting only
+revert    reverts an earlier commit'
+types=$(cut -d' ' -f1 <<<"$types_help" | paste -sd'|' -)
+# Common wrong types and what to use instead
+aliases='feature:feat bugfix:fix hotfix:fix doc:docs tests:test deps:build config:build infra:build-or-ci release:chore'
 
 max_branch=50
 max_subject=100
 # Branches stay lowercase: on case-insensitive file systems `Feat/x` and `feat/x` are the same ref
-branch_re='^[a-z]+/[a-z0-9]+(-[a-z0-9]+)*$'
+branch_re="^($types)/[a-z0-9]+(-[a-z0-9]+)*\$"
 # Conventional Commits treats type and scope as case-insensitive
-subject_re='^[A-Za-z]+(\([A-Za-z0-9-]+\))?!?: [^ ]'
+subject_re="^($types)(\([a-z0-9-]+\))?!?: [^ ]"
 
 branch_ok() { [[ $1 == staging ]] || { [[ $1 =~ $branch_re ]] && ((${#1} <= max_branch)); }; }
-subject_ok() { [[ $1 =~ $subject_re ]] && ((${#1} <= max_subject)); }
+subject_ok() {
+  local ok=1
+  shopt -s nocasematch
+  [[ $1 =~ $subject_re ]] && ((${#1} <= max_subject)) && ok=0
+  shopt -u nocasematch
+  return $ok
+}
+
+# Prints why a letters-only type is not allowed, nothing when it is
+type_problem() {
+  local type=$1 lower hint pair
+  lower=$(tr '[:upper:]' '[:lower:]' <<<"$type")
+  [[ "|$types|" == *"|$lower|"* ]] && return 0
+  for pair in $aliases; do
+    [[ $lower == "${pair%%:*}" ]] && hint=" (did you mean '${pair#*:}'?)" && hint=${hint//-or-/\' or \'}
+  done
+  echo "type '$type' is not allowed${hint:-}; use one of: ${types//|/, }"
+}
 
 # Prints one reason per line for a name that failed branch_ok
 branch_problems() {
@@ -31,6 +63,8 @@ branch_problems() {
     echo "type '$type' has uppercase letters: branches are lowercase only"
   elif [[ ! $type =~ ^[a-z]+$ ]]; then
     echo "type '$type' may contain only letters a-z"
+  else
+    type_problem "$type"
   fi
   if [[ -z $rest ]]; then
     echo "name after '/' is empty"
@@ -72,6 +106,8 @@ subject_problems() {
     echo "type before ':' is empty"
   elif [[ ! $type =~ ^[A-Za-z]+$ ]]; then
     echo "type '$type' may contain only letters (no spaces, digits or symbols)"
+  else
+    type_problem "$type"
   fi
   if [[ -z ${desc// /} ]]; then
     echo "description after ': ' is empty"
@@ -83,13 +119,17 @@ subject_problems() {
   return 0
 }
 
+[[ ${BASH_SOURCE[0]} == "$0" ]] || return 0
+
+branch=$1 title=$2 range=$3
+
 branch_pass=(docs/configs-architecture feat/sdk-snapshots fix/issue-42)
-branch_fail=(Docs/configs-architecture feat/Sdk-snapshots feat/sdk_snapshots feat/sdk--snapshots feat/sdk/snapshots
-  sdk-snapshots)
+branch_fail=(Docs/configs-architecture feature/sdk-snapshots feat/Sdk-snapshots feat/sdk_snapshots feat/sdk--snapshots
+  feat/sdk/snapshots sdk-snapshots)
 subject_pass=('docs: decide configs architecture' 'Docs: decide configs architecture' 'feat(sdk): add snapshots'
   'FEAT(SDK)!: drop Node 20')
-subject_fail=('decide configs architecture' 'docs:decide' 'docs:  decide' 'docs(): decide' 'docs (configs): decide'
-  'fix bug: crash' 'docs(configs: decide')
+subject_fail=('decide configs architecture' 'infra: bump pnpm' 'ci-infra-docs: add checks' 'docs:decide'
+  'docs:  decide' 'docs(): decide' 'docs (configs): decide' 'docs(configs: decide')
 
 # Examples are run through the same checks, so they cannot drift from the rules
 examples() {
@@ -97,6 +137,7 @@ examples() {
   shift 3
   for x in "$@"; do
     reason=$($problems "$x" | head -1)
+    reason=${reason%%; use one of*}
     if $ok "$x"; then verdict='✓' reason=''; else verdict='✗'; fi
     if [[ ($kind == pass && $verdict == '✗') || ($kind == fail && $verdict == '✓') ]]; then
       echo "::error::check-names.sh: example '$x' should $kind but does not, fix the examples"
@@ -154,7 +195,10 @@ Rules (docs/development.md#branches-and-pull-requests)
   Branch          <type>/<kebab-case>, ≤ $max_branch chars, lowercase only; 'staging' is exempt
                   $branch_re
   Title, commits  <type>[(<scope>)][!]: <description>, ≤ $max_subject chars; type and scope in any case
-                  $subject_re
+                  $subject_re (case-insensitive)
+
+Types
+$(sed 's/^/  /' <<<"$types_help")
 
 Branch examples
 $(examples branch_ok branch_problems pass "${branch_pass[@]}")
