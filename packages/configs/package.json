@@ -25,6 +25,9 @@
     "prettier",
     "vitest"
   ],
+  "scripts": {
+    "test": "vitest run"
+  },
   "keywords": [],
   "author": "Artem Horovyi",
   "license": "MIT",
