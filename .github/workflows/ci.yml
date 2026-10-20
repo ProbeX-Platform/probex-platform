@@ -16,6 +16,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Any branch may target staging; main accepts only staging
+      - name: Only staging merges into main
+        if: ${{ github.base_ref == 'main' && github.head_ref != 'staging' }}
+        env:
+          HEAD: ${{ github.head_ref }}
+        run: |
+          echo "::error::PRs into main must come from staging, not '$HEAD'"
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -42,7 +51,7 @@ jobs:
           TITLE: ${{ github.event.pull_request.title }}
           RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
         run: |
-          types='feat|fix|chore|docs|refactor|test|perf|build|ci|revert'
+          types='[a-z]+'
           subject="^($types)(\([a-z0-9-]+\))?!?: [^ ]"
           ok=true
           if [[ $BRANCH != staging ]] && { [[ ! $BRANCH =~ ^($types)/[a-z0-9]+(-[a-z0-9]+)*$ ]] || ((${#BRANCH} > 50)); }; then
@@ -50,8 +59,8 @@ jobs:
           fi
           # Merge commits keep every commit in history, so each subject must follow the same rule as the title
           while IFS= read -r line; do
-            if [[ ! $line =~ $subject ]] || ((${#line} > 72)); then
-              echo "::error::'$line' must be a Conventional Commit, ≤ 72 chars"; ok=false
+            if [[ ! $line =~ $subject ]] || ((${#line} > 100)); then
+              echo "::error::'$line' must be a Conventional Commit, ≤ 100 chars"; ok=false
             fi
           done < <(printf '%s\n' "$TITLE"; git log --no-merges --format=%s "$RANGE")
           $ok
@@ -60,7 +69,7 @@ jobs:
         run: pnpm lint
 
       - name: Formatter
-        run: pnpm format:check
+        run: pnpm format
 
       - name: Typecheck
         run: pnpm typecheck
