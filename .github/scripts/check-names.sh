@@ -170,10 +170,15 @@ report() {
 
 report 'Branch' "$branch" branch_ok branch_problems
 report 'PR title' "$title" subject_ok subject_problems
-# Merge commits keep every commit in history, so each subject must follow the same rule as the title
-while IFS= read -r line; do
-  report "Commit ${line%% *}" "${line#* }" subject_ok subject_problems
-done < <(git log --no-merges --format='%h %s' "$range")
+# Merge commits keep every commit in history, so each subject must follow the same rule as the title.
+# Commits on staging were checked in their own PRs and cannot be reworded there, so release PRs skip them.
+if [[ $branch == staging ]]; then
+  echo "- Commits: skipped, staging commits were checked in their own PRs"
+else
+  while IFS= read -r line; do
+    report "Commit ${line%% *}" "${line#* }" subject_ok subject_problems
+  done < <(git log --no-merges --format='%h %s' "$range")
+fi
 
 ((${#failed[@]} == 0)) && exit 0
 

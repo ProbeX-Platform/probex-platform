@@ -42,7 +42,8 @@ Run one package's tests with `pnpm --filter @probex/sdk test`. CI runs `pnpm ver
 - Branch from an up-to-date `staging` as `<type>/<kebab-case>`, ≤ 50 chars, lowercase only; `main` is
   release-only and accepts pull requests only from `staging` (CI fails any other source branch).
 - Commits and PR titles follow Conventional Commits, ≤ 100 chars; type and scope may be in any case. PRs go to
-  `staging` and are merged with merge commits, so every commit must follow the rule.
+  `staging` and are merged with merge commits, so every commit must follow the rule. Release PRs from `staging`
+  into `main` check only the title: their commits were checked in their own PRs.
 - Branches, PR titles and commits use one of these types; release tooling maps them to the changelog and semver.
   A change that spans several types is split into commits, or takes the main type and a scope: `ci(infra): …`.
 
