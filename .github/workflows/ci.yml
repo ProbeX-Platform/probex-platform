@@ -16,6 +16,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Any branch may target staging; main accepts only staging
+      - name: Only staging merges into main
+        if: ${{ github.base_ref == 'main' && github.head_ref != 'staging' }}
+        env:
+          HEAD: ${{ github.head_ref }}
+        run: |
+          echo "::error::PRs into main must come from staging, not '$HEAD'"
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
         with:

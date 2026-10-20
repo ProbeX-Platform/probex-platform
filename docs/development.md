@@ -39,7 +39,8 @@ Run one package's tests with `pnpm --filter @probex/sdk test`. CI runs `pnpm ver
 
 ## Branches and pull requests
 
-- Branch from an up-to-date `staging` as `<type>/<kebab-case>`, ≤ 50 chars; `main` is release-only.
+- Branch from an up-to-date `staging` as `<type>/<kebab-case>`, ≤ 50 chars; `main` is release-only
+  and accepts pull requests only from `staging` (CI fails any other source branch).
 - Commits and PR titles follow Conventional Commits, ≤ 100 chars. PRs go to `staging` and are merged with merge
   commits, so every commit must follow the rule.
 - A public API change updates [docs/api](api/) in the same PR; a design change goes to
