@@ -45,6 +45,14 @@ import config from "@probex/configs/eslint";
 export default [...config, { rules: { "max-lines-per-function": "off" } }];
 ```
 
+Type-aware rules find each file's `tsconfig.json` through the typescript-eslint project service. When editors run
+ESLint from a package directory, set `tsconfigRootDir` in the root config, so files that only the root
+`tsconfig.json` includes (such as `vitest.config.ts`) are still found:
+
+```js
+export default [...config, { languageOptions: { parserOptions: { tsconfigRootDir: import.meta.dirname } } }];
+```
+
 ### `@probex/configs/prettier`
 
 ```ts
