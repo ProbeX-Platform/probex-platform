@@ -27,7 +27,7 @@ the user copies the template first.
    facts.
 3. **Gaps.** List what the file does not decide yet: open questions, contradictions with other docs or ADRs, missing
    failure cases, sections still empty. With a focus, list only what the focus touches.
-4. **Clarify.** Ask the 2–4 questions whose answers change the design: who consumes it, scale, latency, overhead in
+4. **Clarify.** Ask the 2–6 questions whose answers change the design: who consumes it, scale, latency, overhead in
    the host app, compatibility, operations. Use AskUserQuestion with concrete options. Repeat until the
    requirements are clear, then restate them in a short list and get a confirmation.
 5. **Real choices.** For each point where one option is clearly right and cheap to reverse, say so: no ADR. For each

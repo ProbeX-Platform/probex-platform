@@ -2,6 +2,7 @@
 description: Change a code style rule in the shared ESLint/Prettier configs and apply it across the repo.
 argument-hint: <style request>
 disable-model-invocation: true
+model: sonnet
 ---
 
 Request: $ARGUMENTS

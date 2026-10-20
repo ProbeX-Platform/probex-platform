@@ -75,5 +75,5 @@ fix what they report instead of arguing with it.
 - `docs/vision.md` — goals and principles.
 - `docs/development.md` — setup, commands, branches and pull requests.
 - `docs/architecture/` — decided design only: `overview.md` and one file per component.
-- `docs/adr/` — why, only when there was a real choice; from `0000-template.md`.
+- `docs/adr/` — why, only when there was a real choice; from `.claude/templates/adr.md`.
 - `docs/api/` — public API per package.
