@@ -39,8 +39,9 @@ the user copies the template first.
      questions left, template comment removed.
    - `docs/architecture/overview.md` and other component docs updated where the design touches them.
    - An ADR for each real choice from step 5, per `.claude/rules/adr.md`.
-   - `docs/api/<package>.md` when a public interface changes (for example `debugger.start()` becomes
-     `debugger.run()`), per `.claude/rules/docs.md`; a new package's file from `.claude/templates/api.md`.
+   - `docs/api/<package>.md` or `docs/api/<package>/<part>.md` when a public interface changes (for example
+     `debugger.start()` becomes `debugger.run()`), per `.claude/rules/docs.md`; a new package's file from
+     `.claude/templates/api.md`.
    - What is still undecided is not written down: it becomes a follow-up.
 7. **Hand over and ship** per the Workflow section of `CLAUDE.md`. Then list the follow-up work and offer `/task`
    for it.

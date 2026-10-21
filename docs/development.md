@@ -2,13 +2,12 @@
 
 ProbeX is a pnpm monorepo in TypeScript (strict, NodeNext) with Vitest, ESLint and Prettier.
 
-| Package               | Role                                                    |
-| --------------------- | ------------------------------------------------------- |
-| `packages/configs`    | shared tsconfig, ESLint, Prettier and Vitest presets    |
-| `packages/shared`     | public types, protocol and constants                    |
-| `packages/connector`  | default transport from the SDK to the hub               |
-| `packages/sdk`        | debugger core on `node:inspector`, runs in the host app |
-| `examples/node-basic` | demo app                                                |
+| Package               | Role                                                 |
+| --------------------- | ---------------------------------------------------- |
+| `packages/configs`    | shared tsconfig, ESLint, Prettier and Vitest presets |
+| `packages/protocol`   | messages, protocol version and the `Connector` type  |
+| `packages/sdk`        | debugger and default connector, runs in the host app |
+| `examples/node-basic` | demo app                                             |
 
 ## Setup
 

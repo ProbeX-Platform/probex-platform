@@ -13,7 +13,7 @@ version and the `Connector` interface. Each side builds against it without depen
   - the `Connector` interface that the default connector and custom connectors implement;
   - the public data types carried in messages, such as breakpoints and snapshots.
 - Does not own:
-  - moving messages: the [connector](connector.md);
+  - moving messages: the [connector](sdk/connector.md);
   - capturing snapshots and managing breakpoints: the [SDK](sdk.md);
   - helpers and the internal types of one component, even when several packages use them: they stay in the package
     that owns them.

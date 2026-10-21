@@ -20,8 +20,8 @@ enough to track progress card by card. This is a conversation, one step per repl
    - what is explicitly out of scope.
 3. **Split.** One card is one PR: it ships on its own, keeps `pnpm verify` green and is size S or M. Work that is
    size L or holds several independent deliverables is split, usually along packages or flows (for example
-   protocol types → connector → SDK). Propose the split as a list of titles with one line each and the order they
-   depend on; the user confirms or changes it. A topic that fits one card stays one card.
+   protocol types → SDK connector → SDK debugger). Propose the split as a list of titles with one line each and the
+   order they depend on; the user confirms or changes it. A topic that fits one card stays one card.
 4. **Draft and challenge.** For each card, propose acceptance criteria and point out what is missing or untestable.
    Check that no acceptance line falls between two cards and none is in two. Repeat until the user confirms nothing
    is missing.

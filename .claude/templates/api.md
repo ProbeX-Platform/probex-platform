@@ -1,6 +1,7 @@
 <!--
 API doc template, used by /architect and /do-task.
-Copy to `docs/api/<package>.md` and remove this comment. Rules: `.claude/rules/docs.md`.
+Copy to `docs/api/<package>.md` or `docs/api/<package>/<part>.md` and remove this comment. Rules:
+`.claude/rules/docs.md`.
 -->
 
 # @probex/package API

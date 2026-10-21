@@ -7,14 +7,14 @@ paths:
 
 - Comments explain WHY (constraint, trade-off, non-obvious behavior), never WHAT the next line does.
 - No commented-out code, no TODO comments: open a ticket instead.
-- TSDoc: one line, only on exported public API of `packages/sdk` and `packages/connector`.
+- TSDoc: one line, only on exported public API of `packages/sdk`.
 - Arrow functions by default (`const name = (...): T => ...`). Use `function` only where it is required: `this`
   binding, generators, overloads. ESLint enforces `func-style` and `prefer-arrow-callback`.
 - Named exports only. No `any`; use `unknown` and narrow.
 - Explicit return types on exported functions.
 - Throw typed error classes (`class BreakpointError extends Error`), never strings.
 - Small single-purpose functions; split when a function needs a comment to explain its sections.
-- Import other packages by name (`@probex/shared`), never `../../other-package/src`.
+- Import other packages by name (`@probex/protocol`), never `../../other-package/src`.
 
 ```ts
 // Bad

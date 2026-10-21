@@ -8,10 +8,10 @@ of its state, without changing code or redeploying.
 ## How it works
 
 - `@probex/sdk` runs inside your app. It sets breakpoints through `node:inspector`, captures the call stack and
-  variables when one is hit, and resumes at once. It never crashes, throws into or blocks your app.
-- `@probex/connector` carries breakpoints and snapshots between the SDK and the ProbeX hub over one outbound
-  WebSocket. Your app opens no ports.
-- `@probex/shared` holds the public types: `Breakpoint`, `Snapshot`, the `Connector` interface and the protocol.
+  variables when one is hit, and resumes at once. Its built-in connector carries breakpoints and snapshots to and
+  from the ProbeX hub over one outbound WebSocket, so your app opens no ports. It never crashes, throws into or
+  blocks your app.
+- `@probex/protocol` holds the public types: `Breakpoint`, `Snapshot`, the `Connector` interface and the protocol.
 
 Secrets are redacted inside your app before a snapshot leaves it. See the
 [architecture overview](docs/architecture/overview.md).
@@ -31,7 +31,7 @@ Node.js ≥ 22.
 
 - [Development](docs/development.md) — set up the repo, commands, branches and pull requests.
 - [CLAUDE.md](CLAUDE.md) — rules and workflow for AI agents working in this repo.
-- [Coding rules](.claude/rules/) — TypeScript, SDK, shared, testing, docs and ADR conventions.
+- [Coding rules](.claude/rules/) — TypeScript, SDK, protocol, testing, docs and ADR conventions.
 
 ## Security and license
 
