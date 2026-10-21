@@ -5,9 +5,20 @@ paths:
 
 # ADRs
 
-An ADR answers "why this and not that" for developers and companies using ProbeX. Write one only when there was a
-real choice: at least two viable options and a decision that is costly to reverse. An obvious or easily reversible
-choice goes straight into `docs/architecture/`.
+An ADR answers "why this and not that" for developers and companies using ProbeX. Write one only when the choice
+meets the bar:
+
+1. **Real choice** — at least two viable options.
+2. **Costly to reverse** — reversing it changes something outside the component's own code:
+   - the public API: exports, their signatures, options, environment variables, documented behavior;
+   - the protocol: messages, fields, version, close codes, the guarantees peers rely on;
+   - the packages: their boundaries or runtime dependencies;
+   - what users, custom connectors or hubs have to implement.
+
+Everything else goes straight into `docs/architecture/`, even when there were options: internal algorithms, queues,
+timeouts, limits, defaults, module layout. Choices that cannot be made separately share one ADR; independent ones
+get one each. A detail of an existing decision is not a new ADR. Never merge, squash or delete an accepted ADR that
+is on `staging`: supersede it.
 
 - File `docs/adr/NNNN-kebab-title.md`, next free number, no gaps. Copy `.claude/templates/adr.md` and keep its
   sections in order: Status, Context, Decision, Alternatives, Consequences.

@@ -30,8 +30,8 @@ the user copies the template first.
 4. **Clarify.** Ask the 2–6 questions whose answers change the design: who consumes it, scale, latency, overhead in
    the host app, compatibility, operations. Use AskUserQuestion with concrete options. Repeat until the
    requirements are clear, then restate them in a short list and get a confirmation.
-5. **Real choices.** For each point where one option is clearly right and cheap to reverse, say so: no ADR. For each
-   real choice, present 2–3 viable options: how it works (2–3 lines), what it costs (host-app overhead, protocol
+5. **Real choices.** For each point where one option is clearly right, or that misses the ADR bar in
+   `.claude/rules/adr.md`, say so: no ADR. For each choice that meets the bar, present 2–3 viable options: how it works (2–3 lines), what it costs (host-app overhead, protocol
    impact, complexity, operations), what it rules out later, how it fits the vision's principles. Recommend one
    with the reason. The user decides; iterate if they push back.
 6. **Record**, once the user confirms:
