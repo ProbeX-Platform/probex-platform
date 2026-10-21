@@ -28,11 +28,11 @@ We talked about transports and WebSockets seem good.
 
 <!-- Good -->
 
-# 0003. Use WebSocket for SDK to connector transport
+# 0003. Use WebSocket between the SDK and the hub
 
 ## Decision
 
-We use one WebSocket per SDK instance, opened by the SDK to the connector.
+We use one WebSocket per SDK instance, opened by its connector to the hub.
 
 ## Alternatives
 

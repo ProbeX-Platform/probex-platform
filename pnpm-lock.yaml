@@ -71,11 +71,7 @@ importers:
         specifier: ^4.1.10
         version: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
 
-  packages/connector:
-    dependencies:
-      '@probex/shared':
-        specifier: workspace:*
-        version: link:../shared
+  packages/protocol:
     devDependencies:
       '@probex/configs':
         specifier: workspace:*
@@ -83,15 +79,9 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@probex/shared':
+      '@probex/protocol':
         specifier: workspace:*
-        version: link:../shared
-    devDependencies:
-      '@probex/configs':
-        specifier: workspace:*
-        version: link:../configs
-
-  packages/shared:
+        version: link:../protocol
     devDependencies:
       '@probex/configs':
         specifier: workspace:*

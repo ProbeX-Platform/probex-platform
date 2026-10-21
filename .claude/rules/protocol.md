@@ -1,12 +1,12 @@
 ---
 paths:
-  - "packages/shared/**"
+  - "packages/protocol/**"
 ---
 
-# Shared
+# Protocol
 
-`@probex/shared` is the public contract: the types and constants the SDK, the connector and the hub use, including
-the messages they exchange (the protocol), and the public types end users need (`Connector`, `Breakpoint`,
+`@probex/protocol` is the public contract: the types and constants the SDK, custom connectors and the hub use,
+including the messages they exchange (the protocol), and the public types end users need (`Connector`, `Breakpoint`,
 `Snapshot`). Consumers are TypeScript and JavaScript only; the types are the full protocol spec.
 
 - Only what both ends of the wire must agree on: messages, protocol constants, the `Connector` interface and the data
@@ -15,7 +15,8 @@ the messages they exchange (the protocol), and the public types end users need (
 - Types and constants only: no runtime logic, no side effects, no dependencies.
 - Messages go over the wire as JSON: use values that survive `JSON.stringify` → `JSON.parse` unchanged. No `Date`,
   `Map`, `Set`, `bigint`, `undefined` values or class instances.
-- The SDK and the connector may run different versions: every message carries the protocol version.
+- The SDK, custom connectors and the hub may run different versions: every message carries the protocol
+  version.
 - Backward-compatible: add optional fields; never rename, remove or retype. A breaking change bumps the protocol
   version.
 

@@ -21,8 +21,8 @@ json_field_changed() {
 
 sensitive=$(
   grep -E '^packages/[^/]+/src/index\.ts$' <<<"$changed" | sed 's/^/public API: /'
-  grep -qE '^packages/shared/' <<<"$changed" && echo "shared types and protocol: packages/shared"
-  grep -qE '^packages/connector/src/' <<<"$changed" && echo "transport: packages/connector/src"
+  grep -qE '^packages/protocol/' <<<"$changed" && echo "protocol: packages/protocol"
+  grep -qE '^packages/sdk/src/connector/' <<<"$changed" && echo "transport: packages/sdk/src/connector"
   for manifest in $(grep -E '^packages/[^/]+/package\.json$' <<<"$changed"); do
     if ! git cat-file -e "$base:$manifest" 2>/dev/null; then
       echo "new package: $manifest"
