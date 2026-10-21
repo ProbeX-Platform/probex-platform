@@ -1,1 +1,1 @@
-export { default } from "@probex/configs/prettier";
+export { default } from "@probex-platform/configs/prettier";

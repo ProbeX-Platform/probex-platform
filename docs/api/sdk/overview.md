@@ -1,8 +1,12 @@
-# @probex/sdk API
+# @probex-platform/sdk API
 
 ## Installation
 
-None yet.
+```sh
+pnpm add @probex-platform/sdk
+```
+
+Requires Node.js 22 or later.
 
 ## Exports
 

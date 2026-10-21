@@ -23,7 +23,7 @@ Dependencies point down this table only.
 
 - `pnpm verify` — lint, format check, typecheck, tests with coverage ≥ 80%. The gate; CI runs the same scripts.
 - `pnpm verify:fix` — auto-fix lint and formatting.
-- `pnpm --filter @probex/sdk test` — tests of one package.
+- `pnpm --filter @probex-platform/sdk test` — tests of one package.
 
 Run checks only through `package.json` scripts, never retyped tool commands, so they cannot drift.
 

@@ -5,7 +5,7 @@ paths:
 
 # Protocol
 
-`@probex/protocol` is the public contract: the types and constants the SDK, custom connectors and the hub use,
+`@probex-platform/protocol` is the public contract: the types and constants the SDK, custom connectors and the hub use,
 including the messages they exchange (the protocol), and the public types end users need (`Connector`, `Breakpoint`,
 `Snapshot`). Consumers are TypeScript and JavaScript only; the types are the full protocol spec.
 

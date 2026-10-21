@@ -1,8 +1,8 @@
-# @probex/sdk debugger API
+# @probex-platform/sdk debugger API
 
 ## Installation
 
-Part of [`@probex/sdk`](overview.md#installation).
+Part of [`@probex-platform/sdk`](overview.md#installation).
 
 ## Exports
 

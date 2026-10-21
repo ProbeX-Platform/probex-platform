@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`@probex/configs` holds shared presets for development tools (TypeScript, ESLint, Prettier and Vitest), so every
+`@probex-platform/configs` holds shared presets for development tools (TypeScript, ESLint, Prettier and Vitest), so every
 consumer configures them the same way instead of copying config. Today the consumers are the root, `packages/*` and
 `examples/*` of this monorepo. The presets are general and contain nothing specific to ProbeX, so the package can
 also serve any TS/Node project that installs it from npm.
@@ -13,7 +13,7 @@ also serve any TS/Node project that installs it from npm.
   and the ESLint plugins they need, bundled as dependencies.
 - Does not own: repo-level orchestration and gates, such as the Vitest projects list, the coverage thresholds and the
   root `tsconfig.json` include list. Each repo keeps them in its own root config. It also does not own repo
-  conventions such as the `@probex/source` condition name, which the consumer passes in.
+  conventions such as the `@probex-platform/source` condition name, which the consumer passes in.
 - Constraints:
   - Dev-time only: never a runtime dependency of the SDK or the host app.
   - Depends on no other ProbeX package.
@@ -24,7 +24,7 @@ also serve any TS/Node project that installs it from npm.
 ## Interactions
 
 ```text
-@probex/configs ──┬── presets ─────────────▶ Repo root configs
+@probex-platform/configs ──┬── presets ─────────────▶ Repo root configs
                   ├── presets ─────────────▶ Workspace packages and examples
                   └─ ─ presets, from npm ─ ▶ Other TS/Node projects
 ```
@@ -44,8 +44,8 @@ Signatures and examples: [`docs/api/configs.md`](../api/configs.md).
 
 ### Running tests against sources
 
-1. A workspace package exports the `@probex/source` condition pointing at `src/index.ts`.
-2. Its `vitest.config.ts` calls `createVitestConfig({ sourceCondition: "@probex/source" })`.
+1. A workspace package exports the `@probex-platform/source` condition pointing at `src/index.ts`.
+2. Its `vitest.config.ts` calls `createVitestConfig({ sourceCondition: "@probex-platform/source" })`.
 3. Vitest resolves imports of workspace packages to their sources, so tests run without a build. A package without
    the condition resolves through its default export as usual.
 
