@@ -14,7 +14,7 @@ and the default connector needs no runtime dependencies: Node.js 22 has a built-
 ## Decision
 
 We ship the default connector as a module of `@probex-platform/sdk` in `packages/sdk/src/connector/`, which imports only
-`@probex/protocol` and Node built-ins.
+`@probex-platform/protocol` and Node built-ins.
 
 ## Alternatives
 
