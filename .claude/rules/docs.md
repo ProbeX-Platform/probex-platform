@@ -13,6 +13,9 @@ complete: a doc that takes more than a few minutes to read gets split.
 - One name per concept, the same in code and docs.
 - Link, do not repeat: point to the ADR for "why", to `docs/api/` for "how to use".
 - Code blocks always declare a language. Relative links between docs.
+- Diagrams are plain text in a `text` code block, ≤ 120 chars wide, drawn with box-drawing characters
+  (`─ │ ┌ ┐ └ ┘ ├ ┤ ┬ ┴ ▶ ◀`). `──▶` is a call or data flow, `─ ─▶` an optional one; label every arrow. No Mermaid
+  or images: the docs are read as raw text in terminals, editors and on npm.
 - Keep each file's section structure below; write `None yet.` under a section that has no content.
 
 ## `docs/architecture/`
@@ -21,8 +24,8 @@ Only the decided design. No alternatives, no "we considered", no open questions:
 `/architect`. When a decision changes, rewrite the doc to the new design; the history lives in the ADRs. A draft
 made from `.claude/templates/architecture.md` is input for `/architect` only and is never merged as a draft.
 
-`overview.md` has the sections Components (Mermaid diagram), Packages, Key flows, Decisions (ADR links).
-`<component>.md` has the sections Purpose, Boundaries, Interactions (Mermaid diagram), Key flows, Decisions.
+`overview.md` has the sections Components (diagram), Packages, Key flows, Decisions (ADR links).
+`<component>.md` has the sections Purpose, Boundaries, Interactions (diagram), Key flows, Decisions.
 
 ## `docs/api/<package>.md`
 

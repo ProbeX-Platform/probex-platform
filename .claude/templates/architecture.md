@@ -19,11 +19,11 @@ What this component is for and who uses it. 1–3 sentences.
 
 ## Interactions
 
-```mermaid
-sequenceDiagram
-  participant A as This component
-  participant B as Other component
-  A->>B: message
+```text
+This component          Other component
+      │                        │
+      │─────── message ───────▶│
+      │◀────── reply ──────────│
 ```
 
 ## Key flows

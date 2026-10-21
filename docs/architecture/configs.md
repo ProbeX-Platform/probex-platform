@@ -23,16 +23,10 @@ also serve any TS/Node project that installs it from npm.
 
 ## Interactions
 
-```mermaid
-flowchart LR
-  configs["@probex/configs"]
-  root["Repo root configs"]
-  ws["Workspace packages and examples"]
-  ext["Other TS/Node projects"]
-
-  configs -->|presets| root
-  configs -->|presets| ws
-  configs -.->|presets, from npm| ext
+```text
+@probex/configs ──┬── presets ─────────────▶ Repo root configs
+                  ├── presets ─────────────▶ Workspace packages and examples
+                  └─ ─ presets, from npm ─ ▶ Other TS/Node projects
 ```
 
 Consumers apply a preset in their own config file and add their overrides on top.
