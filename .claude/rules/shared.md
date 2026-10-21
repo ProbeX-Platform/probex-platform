@@ -9,8 +9,9 @@ paths:
 the messages they exchange (the protocol), and the public types end users need (`Connector`, `Breakpoint`,
 `Snapshot`). Consumers are TypeScript and JavaScript only; the types are the full protocol spec.
 
-- Only what at least two packages use, or a public type end users need. Anything else lives in its package; move it
-  here when it qualifies, and move it back out when it no longer does.
+- Only what both ends of the wire must agree on: messages, protocol constants, the `Connector` interface and the data
+  types messages carry. Helpers and one package's internal types stay in that package, however many packages use
+  them. See [ADR 0001](../../docs/adr/0001-keep-the-protocol-in-its-own-package.md).
 - Types and constants only: no runtime logic, no side effects, no dependencies.
 - Messages go over the wire as JSON: use values that survive `JSON.stringify` → `JSON.parse` unchanged. No `Date`,
   `Map`, `Set`, `bigint`, `undefined` values or class instances.
