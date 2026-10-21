@@ -82,8 +82,10 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
    dropped.
 2. Data messages (snapshots, later logs) go to the data buffer. When it is full by `buffer.maxMessages` or
    `buffer.maxBytes`, the oldest data messages are dropped and a warning is logged.
-3. All other messages are control messages (breakpoint status, errors) and go to the control queue. Data never
-   pushes them out; when 100 control messages are waiting, the oldest is dropped and an error is logged.
+3. All other messages are control messages (breakpoint status, errors) and go to the control queue, so a burst of
+   snapshots cannot hide a breakpoint's status from the hub. Data never pushes them out; when 100 control messages
+   are waiting, the oldest is dropped and an error is logged. A new message type is control unless the connector
+   lists it as data.
 4. While `connected`, the batcher takes control messages first, then data, until it reaches `batch.maxMessages` or
    `batch.maxBytes`, or `batch.flushIntervalMs` passes. A single message larger than `batch.maxBytes` is sent on
    its own.
@@ -120,4 +122,3 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 - [0007. Deliver messages to the hub at most once](../../adr/0007-deliver-messages-to-the-hub-at-most-once.md)
 - [0008. Use the ws package for the hub connection](../../adr/0008-use-the-ws-package-for-the-hub-connection.md)
 - [0009. Run the hub handshake in the connector](../../adr/0009-run-the-hub-handshake-in-the-connector.md)
-- [0010. Keep control messages apart from data messages](../../adr/0010-keep-control-messages-apart-from-data-messages.md)

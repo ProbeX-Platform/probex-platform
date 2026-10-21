@@ -41,7 +41,7 @@ default. Only values that differ per deployment have an environment variable. Se
 - `options.logger` — [`Logger`](#logger). Default: `console` for `warn` and `error`, prefixed with `[probex]`.
 - `options.buffer.maxMessages` — `number`, default `1000`. Data messages, such as snapshots, kept while they wait
   to be sent. Control messages, such as breakpoint status, wait in a separate queue of 100 that data never pushes
-  out. See [ADR 0010](../../adr/0010-keep-control-messages-apart-from-data-messages.md).
+  out.
 - `options.buffer.maxBytes` — `number`, default `1048576` (1 MiB). Serialized size of the kept data messages.
 - `options.batch.maxMessages` — `number`, default `100`. A batch is sent when it reaches any of the three batch
   limits.

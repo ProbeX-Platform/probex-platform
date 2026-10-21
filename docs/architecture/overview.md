@@ -37,4 +37,3 @@ a [connector](sdk/connector.md), by default `HubConnector` over one WebSocket.
 - [0007. Deliver messages to the hub at most once](../adr/0007-deliver-messages-to-the-hub-at-most-once.md)
 - [0008. Use the ws package for the hub connection](../adr/0008-use-the-ws-package-for-the-hub-connection.md)
 - [0009. Run the hub handshake in the connector](../adr/0009-run-the-hub-handshake-in-the-connector.md)
-- [0010. Keep control messages apart from data messages](../adr/0010-keep-control-messages-apart-from-data-messages.md)
