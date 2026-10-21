@@ -1,12 +1,12 @@
 {
-  "name": "@probex/node-basic",
+  "name": "@probex-platform/node-basic",
   "version": "1.0.0",
   "private": true,
   "description": "",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx --conditions=@probex/source --watch src/index.ts",
+    "dev": "tsx --conditions=@probex-platform/source --watch src/index.ts",
     "build": "rm -rf ./dist && tsc -b",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -22,6 +22,6 @@
     "fastify": "^5.11.2"
   },
   "devDependencies": {
-    "@probex/configs": "workspace:*"
+    "@probex-platform/configs": "workspace:*"
   }
 }

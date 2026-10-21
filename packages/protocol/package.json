@@ -1,10 +1,10 @@
 {
-  "name": "@probex/shared",
+  "name": "@probex-platform/protocol",
   "version": "1.0.0",
-  "description": "Types and constants shared by ProbeX packages",
+  "description": "ProbeX protocol: messages, protocol version and the Connector interface",
   "exports": {
     ".": {
-      "@probex/source": "./src/index.ts",
+      "@probex-platform/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
@@ -26,6 +26,6 @@
     "node": ">=22"
   },
   "devDependencies": {
-    "@probex/configs": "workspace:*"
+    "@probex-platform/configs": "workspace:*"
   }
 }

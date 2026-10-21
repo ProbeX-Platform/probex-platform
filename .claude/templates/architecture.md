@@ -1,8 +1,8 @@
 <!--
 Architecture doc template, read by /architect.
-Copy to `docs/architecture/<component>.md`, replace the title and write your draft under each section: ideas, open
-questions and options are fine in a draft. /architect turns the draft into the decided design and removes this
-comment. Rules for the final file: `.claude/rules/docs.md`.
+Copy to `docs/architecture/<component>.md` or `docs/architecture/<package>/<component>.md`, replace the title and
+write your draft under each section: ideas, open questions and options are fine in a draft. /architect turns the
+draft into the decided design and removes this comment. Rules for the final file: `.claude/rules/docs.md`.
 -->
 
 # Component name
@@ -19,11 +19,11 @@ What this component is for and who uses it. 1–3 sentences.
 
 ## Interactions
 
-```mermaid
-sequenceDiagram
-  participant A as This component
-  participant B as Other component
-  A->>B: message
+```text
+This component          Other component
+      │                        │
+      │─────── message ───────▶│
+      │◀────── reply ──────────│
 ```
 
 ## Key flows

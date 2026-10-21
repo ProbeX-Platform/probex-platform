@@ -2,13 +2,12 @@
 
 ProbeX is a pnpm monorepo in TypeScript (strict, NodeNext) with Vitest, ESLint and Prettier.
 
-| Package               | Role                                                    |
-| --------------------- | ------------------------------------------------------- |
-| `packages/configs`    | shared tsconfig, ESLint, Prettier and Vitest presets    |
-| `packages/shared`     | public types, protocol and constants                    |
-| `packages/connector`  | default transport from the SDK to the hub               |
-| `packages/sdk`        | debugger core on `node:inspector`, runs in the host app |
-| `examples/node-basic` | demo app                                                |
+| Package               | Role                                                 |
+| --------------------- | ---------------------------------------------------- |
+| `packages/configs`    | shared tsconfig, ESLint, Prettier and Vitest presets |
+| `packages/protocol`   | messages, protocol version and the `Connector` type  |
+| `packages/sdk`        | debugger and default connector, runs in the host app |
+| `examples/node-basic` | demo app                                             |
 
 ## Setup
 
@@ -35,7 +34,7 @@ pnpm verify     → lint → format → typecheck → test:coverage (≥ 80%), s
 pnpm verify:fix → auto-fix lint and formatting
 ```
 
-Run one package's tests with `pnpm --filter @probex/sdk test`. CI runs `pnpm verify`.
+Run one package's tests with `pnpm --filter @probex-platform/sdk test`. CI runs `pnpm verify`.
 
 ## Branches and pull requests
 
@@ -64,4 +63,4 @@ Run one package's tests with `pnpm --filter @probex/sdk test`. CI runs `pnpm ver
 - CI checks the names with `.github/scripts/check-names.sh`, the source of these rules; run it locally as
   `bash .github/scripts/check-names.sh <branch> "<pr title>" origin/staging..HEAD`.
 - A public API change updates [docs/api](api/) in the same PR; a design change goes to
-  [docs/architecture](architecture/overview.md) and, when there was a real choice, an [ADR](adr/).
+  [docs/architecture](architecture/overview.md) and, when the choice is costly to reverse for users or peers, an [ADR](adr/).

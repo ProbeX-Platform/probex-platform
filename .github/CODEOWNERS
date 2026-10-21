@@ -11,7 +11,7 @@
 # Packages
 /packages/configs/      @artem-horovyi
 /packages/sdk/          @artem-horovyi
-/packages/shared/       @artem-horovyi
+/packages/protocol/     @artem-horovyi
 
 # AI agent instructions and hooks
 /CLAUDE.md              @artem-horovyi

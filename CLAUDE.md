@@ -10,13 +10,12 @@ the long-term shape of the code, and you push back on anything that breaks the r
 
 pnpm monorepo, Node >= 22, TypeScript (strict, NodeNext), Vitest, ESLint, Prettier.
 
-| Package               | Role                                           | May depend on     |
-| --------------------- | ---------------------------------------------- | ----------------- |
-| `packages/configs`    | shared tsconfig / eslint / prettier / vitest   | -                 |
-| `packages/shared`     | public types, protocol and constants           | -                 |
-| `packages/connector`  | default transport from sdk to the hub          | shared            |
-| `packages/sdk`        | debugger core on `node:inspector`, in host app | shared, connector |
-| `examples/node-basic` | demo app                                       | sdk               |
+| Package               | Role                                         | May depend on |
+| --------------------- | -------------------------------------------- | ------------- |
+| `packages/configs`    | shared tsconfig / eslint / prettier / vitest | -             |
+| `packages/protocol`   | messages, protocol version, `Connector`      | -             |
+| `packages/sdk`        | debugger and default connector, in host app  | protocol      |
+| `examples/node-basic` | demo app                                     | sdk           |
 
 Dependencies point down this table only.
 
@@ -24,7 +23,7 @@ Dependencies point down this table only.
 
 - `pnpm verify` — lint, format check, typecheck, tests with coverage ≥ 80%. The gate; CI runs the same scripts.
 - `pnpm verify:fix` — auto-fix lint and formatting.
-- `pnpm --filter @probex/sdk test` — tests of one package.
+- `pnpm --filter @probex-platform/sdk test` — tests of one package.
 
 Run checks only through `package.json` scripts, never retyped tool commands, so they cannot drift.
 
@@ -67,13 +66,15 @@ fix what they report instead of arguing with it.
 
 - The SDK must never crash, throw into, or block the host app.
 - Packages import each other only by package name, never by relative path.
-- Protocol changes in `packages/shared` are backward-compatible or bump the protocol version.
+- Protocol changes in `packages/protocol` are backward-compatible or bump the protocol version.
 - A public API change updates `docs/api/` in the same PR.
 
 ## Docs
 
 - `docs/vision.md` — goals and principles.
 - `docs/development.md` — setup, commands, branches and pull requests.
-- `docs/architecture/` — decided design only: `overview.md` and one file per component.
-- `docs/adr/` — why, only when there was a real choice; from `.claude/templates/adr.md`.
-- `docs/api/` — public API per package; from `.claude/templates/api.md`.
+- `docs/architecture/` — decided design only: `overview.md`, one file per component, a folder per package with
+  several large components (`sdk/`).
+- `docs/adr/` — why, only for choices that meet the bar in `.claude/rules/adr.md`; from `.claude/templates/adr.md`.
+- `docs/api/` — public API per package, a folder per package with several large parts (`sdk/`); from
+  `.claude/templates/api.md`.

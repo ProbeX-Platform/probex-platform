@@ -1,5 +1,5 @@
 {
-  "name": "@probex/configs",
+  "name": "@probex-platform/configs",
   "version": "1.0.0",
   "description": "Shared TypeScript, ESLint, Prettier and Vitest configs",
   "type": "module",

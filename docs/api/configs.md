@@ -1,9 +1,9 @@
-# @probex/configs API
+# @probex-platform/configs API
 
 ## Installation
 
 ```sh
-pnpm add -D @probex/configs
+pnpm add -D @probex-platform/configs
 ```
 
 `eslint`, `prettier`, `typescript` and `vitest` are optional peer dependencies: install only the tools you use. The
@@ -11,25 +11,25 @@ ESLint plugins the preset needs come bundled.
 
 ## Exports
 
-### `@probex/configs/tsconfig/base.json`
+### `@probex-platform/configs/tsconfig/base.json`
 
 ```json
-{ "extends": "@probex/configs/tsconfig/base.json" }
+{ "extends": "@probex-platform/configs/tsconfig/base.json" }
 ```
 
 Strict TypeScript for Node: `ES2024`, `NodeNext` modules, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`
 and `verbatimModuleSyntax`.
 
-### `@probex/configs/tsconfig/workspace.json`
+### `@probex-platform/configs/tsconfig/workspace.json`
 
 ```json
-{ "extends": "@probex/configs/tsconfig/workspace.json" }
+{ "extends": "@probex-platform/configs/tsconfig/workspace.json" }
 ```
 
 `base.json` plus a composite build of one monorepo package: compiles `src/` to `dist/` with declarations and source
 maps, and does not emit `*.test.ts`. Paths are relative to the extending `tsconfig.json`.
 
-### `@probex/configs/eslint`
+### `@probex-platform/configs/eslint`
 
 ```ts
 declare const config: Linter.Config[];
@@ -40,12 +40,20 @@ Flat config: typescript-eslint `strictTypeChecked` and `stylisticTypeChecked`, i
 rules for `*.test.ts`. Lints `*.ts` files only.
 
 ```js
-import config from "@probex/configs/eslint";
+import config from "@probex-platform/configs/eslint";
 
 export default [...config, { rules: { "max-lines-per-function": "off" } }];
 ```
 
-### `@probex/configs/prettier`
+Type-aware rules find each file's `tsconfig.json` through the typescript-eslint project service. When editors run
+ESLint from a package directory, set `tsconfigRootDir` in the root config, so files that only the root
+`tsconfig.json` includes (such as `vitest.config.ts`) are still found:
+
+```js
+export default [...config, { languageOptions: { parserOptions: { tsconfigRootDir: import.meta.dirname } } }];
+```
+
+### `@probex-platform/configs/prettier`
 
 ```ts
 declare const config: Config;
@@ -55,7 +63,7 @@ export default config;
 Prettier options: 120 columns, double quotes, semicolons, trailing commas.
 
 ```js
-export { default } from "@probex/configs/prettier";
+export { default } from "@probex-platform/configs/prettier";
 ```
 
 ### `createVitestConfig()`
@@ -75,7 +83,7 @@ Builds the Vitest project config: runs `**/*.test.ts` and skips `dist/`.
 **Errors** — none.
 
 ```ts
-import { createVitestConfig } from "@probex/configs/vitest";
+import { createVitestConfig } from "@probex-platform/configs/vitest";
 
 export default createVitestConfig({ sourceCondition: "@acme/source" });
 ```
@@ -92,7 +100,7 @@ interface VitestConfigOptions {
   server environments, so tests import workspace packages from their sources without a build. Without it, Vite's
   default conditions apply.
 
-### `@probex/configs/vitest` default export
+### `@probex-platform/configs/vitest` default export
 
 ```ts
 declare const config: UserWorkspaceConfig;
@@ -102,7 +110,7 @@ export default config;
 The result of `createVitestConfig()` without options.
 
 ```ts
-export { default } from "@probex/configs/vitest";
+export { default } from "@probex-platform/configs/vitest";
 ```
 
 ## Usage
@@ -126,11 +134,11 @@ against `dist/`.
 Its `tsconfig.json` and `vitest.config.ts`:
 
 ```json
-{ "extends": "@probex/configs/tsconfig/workspace.json" }
+{ "extends": "@probex-platform/configs/tsconfig/workspace.json" }
 ```
 
 ```ts
-import { createVitestConfig } from "@probex/configs/vitest";
+import { createVitestConfig } from "@probex-platform/configs/vitest";
 import { defineProject, mergeConfig } from "vitest/config";
 
 export default mergeConfig(
