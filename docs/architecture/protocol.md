@@ -59,3 +59,4 @@ import `@probex-platform/protocol`. None of them imports another to get a protoc
 ## Decisions
 
 - [0001. Keep the protocol in its own package](../adr/0001-keep-the-protocol-in-its-own-package.md)
+- [0004. Use handler functions in the Connector interface](../adr/0004-use-handler-functions-in-the-connector-interface.md)
