@@ -1,5 +1,5 @@
 {
-  "name": "@probex/sdk",
+  "name": "@probex-platform/sdk",
   "version": "1.0.0",
   "description": "",
   "exports": {
@@ -13,7 +13,7 @@
   ],
   "type": "module",
   "scripts": {
-    "dev": "tsx --conditions=@probex/source --watch src/index.ts",
+    "dev": "tsx --conditions=@probex-platform/source --watch src/index.ts",
     "build": "rm -rf ./dist && tsc -b",
     "typecheck": "tsc -b",
     "test": "vitest run"
@@ -26,9 +26,9 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@probex/protocol": "workspace:*"
+    "@probex-platform/protocol": "workspace:*"
   },
   "devDependencies": {
-    "@probex/configs": "workspace:*"
+    "@probex-platform/configs": "workspace:*"
   }
 }

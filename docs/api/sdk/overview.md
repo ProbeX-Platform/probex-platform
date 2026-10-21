@@ -1,4 +1,4 @@
-# @probex/sdk API
+# @probex-platform/sdk API
 
 ## Installation
 

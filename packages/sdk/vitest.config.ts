@@ -1,3 +1,3 @@
-import { createVitestConfig } from "@probex/configs/vitest";
+import { createVitestConfig } from "@probex-platform/configs/vitest";
 
-export default createVitestConfig({ sourceCondition: "@probex/source" });
+export default createVitestConfig({ sourceCondition: "@probex-platform/source" });

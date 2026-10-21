@@ -14,7 +14,7 @@ paths:
 - Explicit return types on exported functions.
 - Throw typed error classes (`class BreakpointError extends Error`), never strings.
 - Small single-purpose functions; split when a function needs a comment to explain its sections.
-- Import other packages by name (`@probex/protocol`), never `../../other-package/src`.
+- Import other packages by name (`@probex-platform/protocol`), never `../../other-package/src`.
 
 ```ts
 // Bad

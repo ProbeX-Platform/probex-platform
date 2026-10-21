@@ -15,22 +15,22 @@ each other.
 ## Decision
 
 We keep the message types, `PROTOCOL_VERSION`, the `Connector` interface and the data types carried in messages in
-`@probex/protocol`, a types-only package that every side depends on. It holds only what both ends of the wire must
+`@probex-platform/protocol`, a types-only package that every side depends on. It holds only what both ends of the wire must
 agree on.
 
 ## Alternatives
 
-- **Types in `@probex/sdk`** — the hub and custom connectors would install the debugger runtime to get the message
+- **Types in `@probex-platform/sdk`** — the hub and custom connectors would install the debugger runtime to get the message
   types and the `Connector` interface, and every SDK release would look like a protocol change.
-- **A general `@probex/shared` for anything two packages use** — helpers and internal types would pile up next to
+- **A general `@probex-platform/shared` for anything two packages use** — helpers and internal types would pile up next to
   the protocol, every change would touch all packages, it would be unclear which changes break compatibility, and
   all of it would become public API.
 
 ## Consequences
 
-- The SDK, custom connectors and the hub import `@probex/protocol` and never each other for protocol types.
+- The SDK, custom connectors and the hub import `@probex-platform/protocol` and never each other for protocol types.
 - A protocol change is visible as a change to one small package and is checked against `PROTOCOL_VERSION`.
 - Small helpers used by several packages are duplicated or kept in their owner instead of being shared here.
 - One more package to version and publish.
-- Follow-up: rename `packages/shared` (`@probex/shared`) to `packages/protocol` (`@probex/protocol`), with its
+- Follow-up: rename `packages/shared` (`@probex-platform/shared`) to `packages/protocol` (`@probex-platform/protocol`), with its
   dependents, `CLAUDE.md` and `.claude/rules/shared.md`.

@@ -7,18 +7,18 @@ Accepted · 2026-10-21
 ## Context
 
 The SDK needs a default transport to the hub, so every user of the SDK gets the default connector. Users who need
-another transport implement the `Connector` interface from `@probex/protocol` and do not need the default one. The
+another transport implement the `Connector` interface from `@probex-platform/protocol` and do not need the default one. The
 hub is the other end of the wire and needs only the protocol. The SDK and its default transport change together,
 and the default connector needs no runtime dependencies: Node.js 22 has a built-in WebSocket client.
 
 ## Decision
 
-We ship the default connector as a module of `@probex/sdk` in `packages/sdk/src/connector/`, which imports only
+We ship the default connector as a module of `@probex-platform/sdk` in `packages/sdk/src/connector/`, which imports only
 `@probex/protocol` and Node built-ins.
 
 ## Alternatives
 
-- **A separate `@probex/connector` package that the SDK depends on** — every user installs it anyway, the two
+- **A separate `@probex-platform/connector` package that the SDK depends on** — every user installs it anyway, the two
   packages would always be released together, and it adds a package to version, publish and document without a
   consumer other than the SDK.
 - **A separate package that users install and pass to the SDK** — the SDK would not work without extra installation

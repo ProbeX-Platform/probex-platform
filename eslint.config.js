@@ -1,4 +1,4 @@
-import config from "@probex/configs/eslint";
+import config from "@probex-platform/configs/eslint";
 
 export default [
   ...config,

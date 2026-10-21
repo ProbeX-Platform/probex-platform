@@ -34,7 +34,7 @@ pnpm verify     → lint → format → typecheck → test:coverage (≥ 80%), s
 pnpm verify:fix → auto-fix lint and formatting
 ```
 
-Run one package's tests with `pnpm --filter @probex/sdk test`. CI runs `pnpm verify`.
+Run one package's tests with `pnpm --filter @probex-platform/sdk test`. CI runs `pnpm verify`.
 
 ## Branches and pull requests
 
