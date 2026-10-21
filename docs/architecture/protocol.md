@@ -2,19 +2,19 @@
 
 ## Purpose
 
-`@probex/protocol` is the contract between the SDK, connectors and the hub: the messages they exchange, the protocol
+`@probex/protocol` is the contract between the SDK, custom connectors, the hub and custom hubs: the messages they exchange, the protocol
 version and the `Connector` interface. Each side builds against it without depending on the others.
 
 ## Boundaries
 
 - Owns:
-  - the message types the SDK and the hub exchange through a connector;
+  - the message types the SDK and a hub exchange through a connector;
   - `PROTOCOL_VERSION` and the other constants both ends of the wire must agree on;
   - the `Connector` interface that the default connector and custom connectors implement;
   - the public data types carried in messages, such as breakpoints and snapshots.
 - Does not own:
   - moving messages: the [connector](sdk/connector.md);
-  - capturing snapshots and managing breakpoints: the [SDK](sdk.md);
+  - capturing snapshots and managing breakpoints: the [debugger](sdk/debugger.md);
   - helpers and the internal types of one component, even when several packages use them: they stay in the package
     that owns them.
 - Constraints:
@@ -25,24 +25,28 @@ version and the `Connector` interface. Each side builds against it without depen
 ## Interactions
 
 ```text
-┌───────┐                    ┌───────────┐                    ┌───────┐
-│  SDK  │◀──── messages ────▶│ Connector │◀──── messages ────▶│  Hub  │
-└───┬───┘                    └─────┬─────┘                    └───┬───┘
-    │ types                        │ types                        │ types
-    ▼                              ▼                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                           @probex/protocol                          │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────┐
+│   @probex/sdk    │──┐
+└──────────────────┘  │
+┌──────────────────┐  │
+│ Custom connector │──┤
+└──────────────────┘  │  types, constants  ┌──────────────────┐
+┌──────────────────┐  ├───────────────────▶│ @probex/protocol │
+│       Hub        │──┤                    └──────────────────┘
+└──────────────────┘  │
+┌──────────────────┐  │
+│    Custom hub    │──┘
+└──────────────────┘
 ```
 
-The SDK, the default connector, custom connectors and the hub import `@probex/protocol`. None of them imports
-another to get a protocol type.
+`@probex/sdk` (its debugger and default connector), custom connectors, the hub and custom hubs written by users
+import `@probex/protocol`. None of them imports another to get a protocol type or constant.
 
 ## Key flows
 
 ### Adding a type or constant
 
-1. Check whether both ends have to agree on it: the SDK and the hub, or the SDK and a connector.
+1. Check whether both ends have to agree on it: the SDK and a hub, or the SDK and a custom connector.
 2. If they do, it goes into `@probex/protocol`. If not, it stays in the package that owns it, however many packages
    use it.
 
