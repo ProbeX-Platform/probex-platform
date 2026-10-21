@@ -53,13 +53,142 @@ function watch(connector: Connector): () => void {
 type ConnectorStatus = "connecting" | "connected" | "disconnected" | "closed";
 ```
 
-The state of a [`Connector`](#connector): `disconnected` before `connect()` and between reconnect attempts, `closed`
-after `close()`.
+The state of a [`Connector`](#connector): `disconnected` before `connect()` and between reconnect attempts,
+`connecting` until the hub accepts the session with [`welcome`](#welcome), `connected` after it, `closed` after
+`close()`.
 
 ```ts
 import type { ConnectorStatus } from "@probex-platform/protocol";
 
 const canSend = (status: ConnectorStatus): boolean => status === "connected";
+```
+
+### `PROTOCOL_VERSION`
+
+```ts
+const PROTOCOL_VERSION = 1;
+```
+
+The protocol version this package describes. Every message carries it in `version`. Additions that old peers can
+ignore keep it; renaming, removing or retyping anything a peer reads bumps it.
+
+```ts
+import { PROTOCOL_VERSION } from "@probex-platform/protocol";
+
+const speaksSameVersion = (version: number): boolean => version === PROTOCOL_VERSION;
+```
+
+### `Message`
+
+```ts
+type Message = Hello | Welcome;
+```
+
+Every protocol message: one JSON object with `version` and a `type` string. Breakpoint and snapshot messages join
+this union as they are added. A peer ignores a message whose `type` it does not know.
+
+```ts
+import type { Message } from "@probex-platform/protocol";
+
+const isHello = (message: Message): boolean => message.type === "hello";
+```
+
+### `Hello`
+
+```ts
+interface Hello {
+  version: typeof PROTOCOL_VERSION;
+  type: "hello";
+  instanceId: string;
+  service?: string;
+  labels: Record<string, string>;
+  hostname: string;
+  pid: number;
+  sdk: { name: string; version: string };
+  runtime: { name: string; version: string };
+}
+```
+
+The first message the SDK sends on every connection. `instanceId` is a random UUID that stays the same across
+reconnects of one connector; `service` and `labels` are what the hub targets breakpoints by. Why the connector sends
+it: [ADR 0009](../adr/0009-run-the-hub-handshake-in-the-connector.md).
+
+Every connector and hub keeps this handshake:
+
+1. The connector sends `hello` as the first frame and nothing else until it receives `welcome`.
+2. The hub checks the token on the upgrade request (HTTP 401 or 403 when it is missing or invalid), then replies
+   `welcome` within 10 s, or closes with [`CLOSE_CODES`](#close_codes) `incompatibleVersion` or `protocolError`.
+3. After `welcome`, the hub sends the full breakpoint state.
+
+```ts
+import { PROTOCOL_VERSION, type Hello } from "@probex-platform/protocol";
+
+const hello: Hello = {
+  version: PROTOCOL_VERSION,
+  type: "hello",
+  instanceId: crypto.randomUUID(),
+  service: "checkout",
+  labels: { region: "eu" },
+  hostname: "checkout-7d9f",
+  pid: 1,
+  sdk: { name: "@probex-platform/sdk", version: "0.1.0" },
+  runtime: { name: "node", version: process.versions.node },
+};
+```
+
+### `Welcome`
+
+```ts
+interface Welcome {
+  version: typeof PROTOCOL_VERSION;
+  type: "welcome";
+}
+```
+
+The hub's reply to [`hello`](#hello): it accepts the session. A connector reports `connected` and starts sending
+other messages only after it.
+
+```ts
+import { PROTOCOL_VERSION, type Welcome } from "@probex-platform/protocol";
+
+const welcome: Welcome = { version: PROTOCOL_VERSION, type: "welcome" };
+```
+
+### `Batch`
+
+```ts
+interface Batch {
+  version: typeof PROTOCOL_VERSION;
+  type: "batch";
+  messages: Message[];
+}
+```
+
+A frame from the SDK to the hub that carries several messages in order. A hub accepts it alongside single messages;
+a connector may send either. Never used for `hello`. Why: [ADR 0005](../adr/0005-batch-and-rate-limit-messages-in-the-connector.md).
+
+```ts
+import { PROTOCOL_VERSION, type Batch, type Message } from "@probex-platform/protocol";
+
+const toBatch = (messages: Message[]): Batch => ({ version: PROTOCOL_VERSION, type: "batch", messages });
+```
+
+### `CLOSE_CODES`
+
+```ts
+const CLOSE_CODES = {
+  protocolError: 4400,
+  incompatibleVersion: 4426,
+} as const;
+```
+
+WebSocket close codes a hub uses to end a session: `protocolError` when the first frame is not a valid `hello` or a
+frame is not a protocol message, `incompatibleVersion` when it does not speak the `hello`'s `version`.
+
+```ts
+import { CLOSE_CODES } from "@probex-platform/protocol";
+
+const isRejected = (code: number): boolean => Object.values<number>(CLOSE_CODES).includes(code);
 ```
 
 ## Usage

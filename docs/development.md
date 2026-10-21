@@ -63,4 +63,4 @@ Run one package's tests with `pnpm --filter @probex-platform/sdk test`. CI runs 
 - CI checks the names with `.github/scripts/check-names.sh`, the source of these rules; run it locally as
   `bash .github/scripts/check-names.sh <branch> "<pr title>" origin/staging..HEAD`.
 - A public API change updates [docs/api](api/) in the same PR; a design change goes to
-  [docs/architecture](architecture/overview.md) and, when there was a real choice, an [ADR](adr/).
+  [docs/architecture](architecture/overview.md) and, when the choice is costly to reverse for users or peers, an [ADR](adr/).

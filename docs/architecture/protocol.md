@@ -8,8 +8,9 @@ version and the `Connector` interface. Each side builds against it without depen
 ## Boundaries
 
 - Owns:
-  - the message types the SDK and a hub exchange through a connector;
-  - `PROTOCOL_VERSION` and the other constants both ends of the wire must agree on;
+  - the message types the SDK and a hub exchange through a connector, including the `hello` → `welcome` handshake
+    and the `batch` frame;
+  - `PROTOCOL_VERSION`, `CLOSE_CODES` and the other constants both ends of the wire must agree on;
   - the `Connector` interface that the default connector and custom connectors implement;
   - the public data types carried in messages, such as breakpoints and snapshots.
 - Does not own:
@@ -50,6 +51,13 @@ import `@probex-platform/protocol`. None of them imports another to get a protoc
 2. If they do, it goes into `@probex-platform/protocol`. If not, it stays in the package that owns it, however many packages
    use it.
 
+### Opening a session
+
+1. The connector sends `hello` with `PROTOCOL_VERSION` and the instance's identity as the first frame.
+2. The hub replies `welcome`, or closes with `CLOSE_CODES.incompatibleVersion` or `CLOSE_CODES.protocolError`.
+3. After `welcome` both sides exchange other messages; the hub starts with the full breakpoint state. The steps and
+   timeouts are in the [protocol API](../api/protocol.md#hello).
+
 ### Changing the protocol
 
 1. An addition that old peers can ignore, such as a new optional field, keeps `PROTOCOL_VERSION`.
@@ -60,3 +68,6 @@ import `@probex-platform/protocol`. None of them imports another to get a protoc
 
 - [0001. Keep the protocol in its own package](../adr/0001-keep-the-protocol-in-its-own-package.md)
 - [0004. Use handler functions in the Connector interface](../adr/0004-use-handler-functions-in-the-connector-interface.md)
+- [0005. Batch and rate-limit messages in the connector](../adr/0005-batch-and-rate-limit-messages-in-the-connector.md)
+- [0007. Deliver messages to the hub at most once](../adr/0007-deliver-messages-to-the-hub-at-most-once.md)
+- [0009. Run the hub handshake in the connector](../adr/0009-run-the-hub-handshake-in-the-connector.md)

@@ -42,8 +42,8 @@ Follow `.claude/rules/`. Every acceptance line becomes at least one test.
 ## 6. Blast radius
 
 Delegate to `impact`. Write a test for every item under "Tests required" (gaps in 3+ files → delegate to
-`unit-tester` with the list). Update `docs/api/` when it says so. "ADR: needed" → ask the user whether it was a
-real choice; if yes, stop and suggest `/architect`.
+`unit-tester` with the list). Update `docs/api/` when it says so. "ADR: needed" → ask the user whether the
+choice meets the bar in `.claude/rules/adr.md`; if yes, stop and suggest `/architect`.
 
 ## 7. Verify and review
 

@@ -75,6 +75,6 @@ fix what they report instead of arguing with it.
 - `docs/development.md` — setup, commands, branches and pull requests.
 - `docs/architecture/` — decided design only: `overview.md`, one file per component, a folder per package with
   several large components (`sdk/`).
-- `docs/adr/` — why, only when there was a real choice; from `.claude/templates/adr.md`.
+- `docs/adr/` — why, only for choices that meet the bar in `.claude/rules/adr.md`; from `.claude/templates/adr.md`.
 - `docs/api/` — public API per package, a folder per package with several large parts (`sdk/`); from
   `.claude/templates/api.md`.
