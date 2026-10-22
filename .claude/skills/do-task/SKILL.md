@@ -2,6 +2,8 @@
 description: Implement a tracker card end to end and open a PR to staging.
 argument-hint: [card link]
 disable-model-invocation: true
+model: sonnet
+effort: high
 ---
 
 Card: $ARGUMENTS
@@ -47,7 +49,7 @@ choice meets the bar in `.claude/rules/adr.md`; if yes, stop and suggest `/archi
 
 ## 7. Verify and review
 
-`pnpm verify` must be green. Delegate to `reviewer` (`model: sonnet` for size S or M, `opus` otherwise). Fix every
+`pnpm verify` must be green. Delegate to `reviewer` without a `model` override. Fix every
 blocker and major, then re-run `pnpm verify`.
 
 ## 8. Hand over and ship
