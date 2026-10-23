@@ -25,6 +25,8 @@ a [connector](sdk/connector.md), by default `HubConnector` over one WebSocket.
 
 - [Connecting to the hub](sdk/connector.md#connecting)
 - [Opening a session](protocol.md#opening-a-session)
+- [Applying breakpoints](sdk/debugger.md#applying-breakpoints)
+- [Capturing a snapshot](sdk/debugger.md#capturing-a-snapshot)
 
 ## Decisions
 
@@ -37,3 +39,5 @@ a [connector](sdk/connector.md), by default `HubConnector` over one WebSocket.
 - [0007. Deliver messages to the hub at most once](../adr/0007-deliver-messages-to-the-hub-at-most-once.md)
 - [0008. Use WebSocket for the hub connection](../adr/0008-use-websocket-for-the-hub-connection.md)
 - [0009. Run the hub handshake in the connector](../adr/0009-run-the-hub-handshake-in-the-connector.md)
+- [0010. Send the full breakpoint set on every change](../adr/0010-send-the-full-breakpoint-set-on-every-change.md)
+- [0011. Encode snapshot values as a nested tree](../adr/0011-encode-snapshot-values-as-a-nested-tree.md)
