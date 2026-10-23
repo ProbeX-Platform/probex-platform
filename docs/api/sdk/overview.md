@@ -6,16 +6,40 @@
 pnpm add @probex-platform/sdk
 ```
 
-Requires Node.js 22 or later.
+- Node.js 22 or later. The main thread is debugged; worker threads are not.
+- TypeScript: ship source maps, inline or as `.map` files next to the JavaScript. Bundled output is not supported.
+- Do not attach another debugger to the process: while breakpoints are set, ProbeX resumes every pause it did not
+  cause.
 
 ## Exports
 
-- [Debugger](debugger.md) — [`probex`](debugger.md#probex), the debugger, and its options.
-- [Connector](connector.md) — [`HubConnector`](connector.md#hubconnector), the default transport to the hub.
+- [Debugger](debugger.md):
+  - [`probex`](debugger.md#probex) — the debugger: `configure()`, `run()`, `stop()`.
+  - [`Debugger`](debugger.md#debugger) — the type of `probex`.
+  - [`DebuggerOptions`](debugger.md#debuggeroptions) — the options of `configure()`.
+- [Connector](connector.md):
+  - [`HubConnector`](connector.md#hubconnector) — the default transport to the hub; create it yourself only to tune
+    it.
+  - [`HubConnectorOptions`](connector.md#hubconnectoroptions) — its options.
+  - [`Logger`](connector.md#logger) — where the SDK writes its logs.
+
+Protocol types, such as [`Connector`](../protocol.md#connector), come from
+[`@probex-platform/protocol`](../protocol.md).
 
 ## Usage
 
-Set `PROBEX_HUB_URL`, `PROBEX_TOKEN` and `PROBEX_SERVICE` in the deployment, then:
+Each option is resolved once, at `run()`: the value passed to `configure()`, then the environment variable, then
+the default.
+
+| Variable         | Option    | Default                                     |
+| ---------------- | --------- | ------------------------------------------- |
+| `PROBEX_ENABLED` | `enabled` | `true`                                      |
+| `PROBEX_HUB_URL` | `url`     | none; required unless a `connector` is set  |
+| `PROBEX_TOKEN`   | `token`   | none                                        |
+| `PROBEX_SERVICE` | `service` | none                                        |
+| `PROBEX_LABELS`  | `labels`  | no labels; format `team=payments,region=eu` |
+
+Set them in the deployment, then start the debugger as early as possible and stop it on shutdown:
 
 ```ts
 import { probex } from "@probex-platform/sdk";

@@ -3,30 +3,56 @@
 ## Components
 
 ```text
-┌─────────────────────────── Host app ────────────────────────────┐
-│ ┌──────────┐    messages    ┌──────────────┐                    │  hello, messages (wss)  ┌─────┐
-│ │ Debugger │───────────────▶│ HubConnector │────────────────────┼────────────────────────▶│ Hub │
-│ │          │◀───────────────│              │◀───────────────────┼─────────────────────────│     │
-│ └──────────┘    messages    └──────────────┘                    │  welcome, breakpoints   └─────┘
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────── Host app (Node.js) ────────────────────────────────┐
+│                              ┌────────────── @probex-platform/sdk ───────────────┐ │
+│ ┌────┐ Debugger.*, Runtime.* │ ┌──────────┐    send(message)    ┌──────────────┐ │ │  hello, messages (wss)   ┌─────┐
+│ │ V8 │◀──────────────────────┼─│ Debugger │────────────────────▶│ HubConnector │─┼─┼─────────────────────────▶│ Hub │
+│ │    │───────────────────────┼▶│          │◀────────────────────│              │◀┼─┼──────────────────────────│     │
+│ └────┘  scriptParsed, paused │ └──────────┘ onMessage, onStatus └──────────────┘ │ │  welcome, breakpoints    └─────┘
+│                              └───────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The [SDK](sdk/overview.md) runs inside the host app: its [debugger](sdk/debugger.md) talks to the hub only through
-a [connector](sdk/connector.md), by default `HubConnector` over one WebSocket.
+ProbeX debugs a running Node.js app without stopping it. The [SDK](sdk/overview.md) runs inside the host app: its
+[debugger](sdk/debugger.md) sets breakpoints through the V8 inspector and captures snapshots of variables, and its
+[connector](sdk/connector.md), `HubConnector` by default, carries messages to and from the hub over one WebSocket.
+The hub decides which breakpoints exist and receives the snapshots. Every peer builds against the
+[protocol](protocol.md).
+
+What the host app can rely on:
+
+- The SDK never throws into, crashes or blocks the app. A failure turns ProbeX off; the app keeps running.
+- Without breakpoints V8 runs the app as if ProbeX were not there. A pause lasts at most 10 ms, and at most 20 ms
+  per second in total.
+- Memory and traffic are bounded: buffers drop the oldest data, and outgoing bytes are rate-limited.
 
 ## Packages
 
-- `@probex-platform/protocol` — messages, `PROTOCOL_VERSION` and the `Connector` interface:
-  [architecture](protocol.md), [API](../api/protocol.md).
-- `@probex-platform/sdk` — the debugger and `HubConnector`: [architecture](sdk/overview.md),
-  [API](../api/sdk/overview.md).
+- `@probex-platform/protocol` — messages, `PROTOCOL_VERSION` and the `Connector` interface; types and constants
+  only. The SDK, custom connectors and hubs import it: [architecture](protocol.md), [API](../api/protocol.md).
+- `@probex-platform/sdk` — the debugger and `HubConnector`, run in the host app. Depends on the protocol and `ws`:
+  [architecture](sdk/overview.md), [API](../api/sdk/overview.md).
+- `@probex-platform/configs` — shared TypeScript, ESLint, Prettier and Vitest presets; dev-time only, never in the
+  host app: [architecture](configs.md), [API](../api/configs.md).
 
 ## Key flows
 
-- [Connecting to the hub](sdk/connector.md#connecting)
-- [Opening a session](protocol.md#opening-a-session)
-- [Applying breakpoints](sdk/debugger.md#applying-breakpoints)
-- [Capturing a snapshot](sdk/debugger.md#capturing-a-snapshot)
+One debugging session, end to end:
+
+1. [Starting](sdk/debugger.md#starting) — `probex.run()` resolves the options and creates the connector.
+2. [Connecting](sdk/connector.md#connecting) — the connector opens the WebSocket and
+   [opens a session](protocol.md#opening-a-session) with `hello` → `welcome`.
+3. [Applying breakpoints](sdk/debugger.md#applying-breakpoints) — the hub sends the full breakpoint set; the
+   debugger maps repository lines to loaded scripts and reports each breakpoint's status.
+4. [Capturing a snapshot](sdk/debugger.md#capturing-a-snapshot) — a hit pauses the thread briefly, the variables
+   are read within limits and the snapshot goes to the connector.
+5. [Sending a message](sdk/connector.md#sending-a-message) — control messages first, snapshots buffered, batched
+   and rate-limited.
+6. [Losing the connection](sdk/debugger.md#losing-the-connection) — breakpoints stay set; after the reconnect the
+   hub sends the full set again.
+7. [Stopping](sdk/debugger.md#stopping) — `probex.stop()` removes the breakpoints and flushes the connector.
+
+Changing the contract between peers: [changing the protocol](protocol.md#changing-the-protocol).
 
 ## Decisions
 
