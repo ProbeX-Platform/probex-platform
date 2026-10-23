@@ -18,6 +18,13 @@ complete: a doc that takes more than a few minutes to read gets split.
   or images: the docs are read as raw text in terminals, editors and on npm.
 - Keep each file's section structure below; write `None yet.` under a section that has no content.
 
+## Overviews
+
+`docs/architecture/overview.md`, `docs/api/overview.md` and the `overview.md` of a package folder give the whole
+picture in a few minutes: they summarize and link, never repeat details. Every change in `docs/architecture/` or
+`docs/api/` checks the overviews above the changed file in the same PR and fixes what no longer matches: diagrams,
+packages, key flows, exports, environment variables and ADR lists.
+
 ## `docs/architecture/`
 
 Only the decided design. No alternatives, no "we considered", no open questions: undecided topics go to
@@ -31,8 +38,10 @@ is one component gets `<package>.md`; a package with several large components ge
 
 ## `docs/api/`
 
-A package gets `<package>.md`. A package with several large parts gets a folder `<package>/`: `overview.md` with
-the installation and the list of parts, and one `<part>.md` per part, named like its architecture doc.
+`overview.md` has the sections Packages (a table: package, what to install it for, link) and Usage (which package
+for which job). A package gets `<package>.md`. A package with several large parts gets a folder `<package>/`:
+`overview.md` with the installation and the list of parts, and one `<part>.md` per part, named like its
+architecture doc.
 
 Copy `.claude/templates/api.md`. Sections Installation, Exports and Usage. Under Exports, one `###` per exported
 symbol: signature, parameters, return value, errors, minimal example. A renamed or removed export keeps a one-line
