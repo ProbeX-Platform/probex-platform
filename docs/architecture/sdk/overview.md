@@ -27,4 +27,4 @@ None yet.
 
 - [0001. Keep the protocol in its own package](../../adr/0001-keep-the-protocol-in-its-own-package.md)
 - [0002. Ship the default connector inside the SDK](../../adr/0002-ship-the-default-connector-inside-the-sdk.md)
-- [0008. Use the ws package for the hub connection](../../adr/0008-use-the-ws-package-for-the-hub-connection.md)
+- [0008. Use WebSocket for the hub connection](../../adr/0008-use-websocket-for-the-hub-connection.md)
