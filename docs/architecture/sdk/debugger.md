@@ -88,9 +88,11 @@ The parts live in `packages/sdk/src/debugger/`:
 ### Applying breakpoints
 
 1. A [`breakpoints`](../../api/protocol.md#breakpoints) message arrives. Invalid entries and those after the 100th
-   get status `error`.
-2. Entries are compared by `id` with the current ones: removed and changed entries lose their V8 breakpoint; new and
-   changed entries are resolved.
+   get status `error`. When an `id` appears more than once, the first entry is used and the others get status
+   `error`.
+2. Entries are compared by `id` with the current ones. An entry with the same `file`, `line` and `limits` is left
+   as it is, with no V8 calls. Removed and changed entries lose their V8 breakpoint; new and changed entries are
+   resolved.
 3. The first non-empty list turns the `Debugger` domain on: V8 reports every loaded script with `scriptParsed`, and
    later ones as they load. An empty list turns it off.
 4. Resolving: candidate scripts are those whose file name, without extension, equals the entry's. For a candidate
@@ -98,7 +100,8 @@ The parts live in `packages/sdk/src/debugger/`:
    source whose path ends with the most segments of `file` wins; a tie gives status `error`, no candidate gives
    `pending`.
 5. The line is mapped to the first generated position of that original line, or of the next line that has one, and
-   the breakpoint is set by script and position. V8 moves it to the next position that has code.
+   the breakpoint is set by script and position. V8 moves it to the next position that has code. Entries that
+   resolve to the same script and position share one V8 breakpoint, which is removed with the last of them.
 6. After each message, the status of every listed breakpoint is sent as a
    [`breakpointStatus`](../../api/protocol.md#breakpointstatus), a control message.
 7. A `pending` breakpoint is resolved again on every `scriptParsed` with a matching file name.
@@ -117,16 +120,18 @@ The parts live in `packages/sdk/src/debugger/`:
 
 1. V8 reaches a breakpoint and pauses the thread; `Debugger.paused` reaches the session synchronously.
 2. A pause without one of our breakpoints in `hitBreakpoints` is resumed at once.
-3. The rate limiter allows the hit if its breakpoint has a token (10 per second), the process has one (50 per
-   second) and the pause budget (20 ms per second) is not spent. Otherwise the thread resumes; a breakpoint out of
-   tokens is removed from V8 with status `rateLimited` and set again with status `active` when its bucket refills,
-   so a hot line stops pausing.
+3. The rate limiter checks each entry on the hit V8 breakpoint: an entry is allowed if it has a token (10 per
+   second), the process has one (50 per second) and the pause budget (20 ms per second) is not spent. With no entry
+   allowed the thread resumes. An entry out of tokens gets status `rateLimited` and `active` again when its bucket
+   refills; once every entry on a V8 breakpoint is out of tokens, the V8 breakpoint is removed until one refills, so
+   a hot line stops pausing.
 4. `Capture` reads up to 20 frames of the stack, mapped back to original positions where a decoded map exists, then
    `this` and the scopes of the innermost frame with synchronous `Runtime.getProperties` calls, depth first, within
-   the breakpoint's limits. At 10 ms or 64 KiB it stops: what is left is `unavailable` and the snapshot is
-   `truncated`.
-5. The thread resumes, and the pause time is charged to the budget.
-6. The [`snapshot`](../../api/protocol.md#snapshot) is sent through the connector as a data message.
+   the largest limits of the allowed entries. At 10 ms or 64 KiB it stops: what is left is `unavailable` and the
+   snapshot is `truncated`.
+5. The thread resumes, and the pause time is charged to the budget. One pause serves every entry on the breakpoint.
+6. For each allowed entry, the capture is cut to that entry's own limits, without V8 calls, and sent as a
+   [`snapshot`](../../api/protocol.md#snapshot) through the connector as a data message.
 
 ### Losing the connection
 

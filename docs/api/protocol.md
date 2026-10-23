@@ -212,8 +212,10 @@ interface Breakpoint {
 
 One breakpoint in [`breakpoints`](#breakpoints).
 
-- `id` — unique within the list. A later list with the same `id` and a different `file`, `line` or `limits`
-  replaces the breakpoint.
+- `id` — unique within the list; when an `id` appears again, the SDK uses the first entry and reports the others
+  as `error`. A later list with the same `id` and the same fields leaves the breakpoint as it is; a different
+  `file`, `line` or `limits` replaces it. Breakpoints with different ids at the same place each get their own
+  snapshots.
 - `file` — the path as in the repository, separated by `/`, such as `src/orders/checkout.ts`. The SDK matches it to
   the loaded file whose path ends with the most of its segments, through source maps for TypeScript.
 - `line` — 1-based line in `file`. A line without code moves to the next line that has code.
@@ -265,7 +267,7 @@ and whenever it changes.
 - `pending` — no loaded file matches `file` yet; the breakpoint is set when one loads.
 - `active` — set; every hit captures a snapshot within the rate limit.
 - `rateLimited` — it hit its rate limit and is off until the limit refills, then `active` again.
-- `error` — it cannot be set; `message` says why: invalid fields, `file` matches several loaded files, no code at or
+- `error` — it cannot be set; `message` says why: invalid fields, a repeated `id`, `file` matches several loaded files, no code at or
   after `line`, the source map cannot be read, or more than 100 breakpoints.
 
 ```ts
