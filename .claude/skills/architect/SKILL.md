@@ -22,9 +22,9 @@ the user copies the template first.
 
 1. **Branch.** `git switch staging && git pull --ff-only`, then create `docs/<kebab-topic>` from it. An uncommitted
    draft comes along with the switch.
-2. **Ground it.** Read the file, `docs/vision.md`, `docs/architecture/overview.md`, the docs it links or touches in
-   `docs/architecture/` and `docs/api/`, and the ADRs whose titles touch the topic. Use the Explore agent for code
-   facts.
+2. **Ground it.** Read the file, `docs/vision.md`, the overviews (`docs/architecture/overview.md`,
+   `docs/api/overview.md`), the docs it links or touches in `docs/architecture/` and `docs/api/`, and the ADRs whose
+   titles touch the topic. Use the Explore agent for code facts.
 3. **Gaps.** List what the file does not decide yet: open questions, contradictions with other docs or ADRs, missing
    failure cases, sections still empty. With a focus, list only what the focus touches.
 4. **Clarify.** Ask the 2–6 questions whose answers change the design: who consumes it, scale, latency, overhead in
@@ -37,7 +37,8 @@ the user copies the template first.
 6. **Record**, once the user confirms:
    - The input file holds only the decided design, per `.claude/rules/docs.md`: no ideas, alternatives or open
      questions left, template comment removed.
-   - `docs/architecture/overview.md` and other component docs updated where the design touches them.
+   - Other component docs updated where the design touches them, and every overview above a changed doc checked
+     and updated, per the Overviews section of `.claude/rules/docs.md`.
    - An ADR for each real choice from step 5, per `.claude/rules/adr.md`.
    - `docs/api/<package>.md` or `docs/api/<package>/<part>.md` when a public interface changes (for example
      `debugger.start()` becomes `debugger.run()`), per `.claude/rules/docs.md`; a new package's file from

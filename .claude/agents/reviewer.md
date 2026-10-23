@@ -18,6 +18,7 @@ You review the current branch of ProbeX. You never modify files.
      missing failure paths, acceptance criteria without a test;
    - a new or changed ADR that does not follow `.claude/templates/adr.md` and `.claude/rules/adr.md`;
    - architecture docs that contain alternatives or open questions;
+   - a change in `docs/architecture/` or `docs/api/` that an overview above it no longer matches;
    - anything in `packages/protocol` that fewer than two other workspace packages import;
    - needless abstraction, duplication, dead code, comments that restate code, AI-style narration.
 4. Skip what ESLint, Prettier and tsc already enforce.

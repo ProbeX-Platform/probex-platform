@@ -17,7 +17,7 @@ You assess the blast radius of the current ProbeX branch. You never modify files
    - **Tests required**: `file → behavior` for every changed behavior no existing test proves. Include failure
      paths; SDK code must prove it never throws into or blocks the host app.
    - **Docs**: `docs/api/` sections to update when public exports changed; `docs/architecture/` when the design
-     changed.
+     changed; the overviews above each changed doc, per the Overviews section of `.claude/rules/docs.md`.
    - **ADR**: `needed: <decision>` only when the change makes a choice that meets the bar in `.claude/rules/adr.md`.
    - **Risks**: what can break other packages, the protocol or the host app.
 
