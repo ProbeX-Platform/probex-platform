@@ -21,7 +21,11 @@
 
 ## Key flows
 
-None yet.
+- [Starting the debugger](debugger.md#starting)
+- [Connecting to the hub](connector.md#connecting)
+- [Applying breakpoints](debugger.md#applying-breakpoints)
+- [Capturing a snapshot](debugger.md#capturing-a-snapshot)
+- [Stopping the debugger](debugger.md#stopping)
 
 ## Decisions
 

@@ -17,6 +17,11 @@ There is one per process, shared by every import of the SDK, even when two copie
 Call `configure()` if you need to, then `run()` once at startup, and `stop()` on shutdown. It never keeps the
 process alive.
 
+The hub sets breakpoints by the file's path in your repository. For TypeScript, ship source maps: inline or as
+`.map` files next to the JavaScript; bundled output is not supported. While breakpoints are set, the debugger
+resumes every pause it did not cause, including `debugger` statements, so do not attach another debugger to the
+process. Design: [debugger architecture](../../architecture/sdk/debugger.md).
+
 **Methods**
 
 - `configure(options?)` — sets [`DebuggerOptions`](#debuggeroptions) for the next `run()`. Each call merges its

@@ -81,11 +81,11 @@ const speaksSameVersion = (version: number): boolean => version === PROTOCOL_VER
 ### `Message`
 
 ```ts
-type Message = Hello | Welcome;
+type Message = Hello | Welcome | Breakpoints | BreakpointStatus | Snapshot;
 ```
 
-Every protocol message: one JSON object with `version` and a `type` string. Breakpoint and snapshot messages join
-this union as they are added. A peer ignores a message whose `type` it does not know.
+Every protocol message: one JSON object with `version` and a `type` string. A peer ignores a message whose `type`
+it does not know.
 
 ```ts
 import type { Message } from "@probex-platform/protocol";
@@ -171,6 +171,199 @@ a connector may send either. Never used for `hello`. Why: [ADR 0005](../adr/0005
 import { PROTOCOL_VERSION, type Batch, type Message } from "@probex-platform/protocol";
 
 const toBatch = (messages: Message[]): Batch => ({ version: PROTOCOL_VERSION, type: "batch", messages });
+```
+
+### `Breakpoints`
+
+```ts
+interface Breakpoints {
+  version: typeof PROTOCOL_VERSION;
+  type: "breakpoints";
+  breakpoints: Breakpoint[];
+}
+```
+
+From the hub: the complete list of [breakpoints](#breakpoint) the instance should have, sent after
+[`welcome`](#welcome) and on every change. The SDK sets the new ones, removes those missing from the list and sends
+a [`breakpointStatus`](#breakpointstatus) for every listed breakpoint. An empty list removes all of them. An
+instance holds at most 100; the rest get status `error`. Why a full list:
+[ADR 0010](../adr/0010-send-the-full-breakpoint-set-on-every-change.md).
+
+```ts
+import { PROTOCOL_VERSION, type Breakpoints } from "@probex-platform/protocol";
+
+const breakpoints: Breakpoints = {
+  version: PROTOCOL_VERSION,
+  type: "breakpoints",
+  breakpoints: [{ id: "bp-1", file: "src/orders/checkout.ts", line: 42 }],
+};
+```
+
+### `Breakpoint`
+
+```ts
+interface Breakpoint {
+  id: string;
+  file: string;
+  line: number;
+  limits?: CaptureLimits;
+}
+```
+
+One breakpoint in [`breakpoints`](#breakpoints).
+
+- `id` — unique within the list. A later list with the same `id` and a different `file`, `line` or `limits`
+  replaces the breakpoint.
+- `file` — the path as in the repository, separated by `/`, such as `src/orders/checkout.ts`. The SDK matches it to
+  the loaded file whose path ends with the most of its segments, through source maps for TypeScript.
+- `line` — 1-based line in `file`. A line without code moves to the next line that has code.
+- `limits` — [`CaptureLimits`](#capturelimits) for this breakpoint's snapshots.
+
+```ts
+import type { Breakpoint } from "@probex-platform/protocol";
+
+const breakpoint: Breakpoint = { id: "bp-1", file: "src/orders/checkout.ts", line: 42, limits: { maxDepth: 2 } };
+```
+
+### `CaptureLimits`
+
+```ts
+interface CaptureLimits {
+  maxDepth?: number;
+  maxItems?: number;
+  maxStringLength?: number;
+}
+```
+
+How much of each value a snapshot keeps. The SDK lowers a larger value to its cap.
+
+- `maxDepth` — levels of nested objects below a variable. Default `3`, at most `5`.
+- `maxItems` — properties of an object, items of an array or set, entries of a map. Default `20`, at most `100`.
+- `maxStringLength` — characters of a string. Default `256`, at most `4096`.
+
+```ts
+import type { CaptureLimits } from "@probex-platform/protocol";
+
+const deep: CaptureLimits = { maxDepth: 5, maxItems: 50 };
+```
+
+### `BreakpointStatus`
+
+```ts
+interface BreakpointStatus {
+  version: typeof PROTOCOL_VERSION;
+  type: "breakpointStatus";
+  breakpointId: string;
+  status: "pending" | "active" | "rateLimited" | "error";
+  message?: string;
+}
+```
+
+From the SDK: the state of one breakpoint, sent for every breakpoint of each [`breakpoints`](#breakpoints) message
+and whenever it changes.
+
+- `pending` — no loaded file matches `file` yet; the breakpoint is set when one loads.
+- `active` — set; every hit captures a snapshot within the rate limit.
+- `rateLimited` — it hit its rate limit and is off until the limit refills, then `active` again.
+- `error` — it cannot be set; `message` says why: invalid fields, `file` matches several loaded files, no code at or
+  after `line`, the source map cannot be read, or more than 100 breakpoints.
+
+```ts
+import { PROTOCOL_VERSION, type BreakpointStatus } from "@probex-platform/protocol";
+
+const status: BreakpointStatus = {
+  version: PROTOCOL_VERSION,
+  type: "breakpointStatus",
+  breakpointId: "bp-1",
+  status: "active",
+};
+```
+
+### `Snapshot`
+
+```ts
+interface Snapshot {
+  version: typeof PROTOCOL_VERSION;
+  type: "snapshot";
+  breakpointId: string;
+  time: number;
+  stack: StackFrame[];
+  variables: Variable[];
+  truncated?: boolean;
+}
+
+interface StackFrame {
+  function: string;
+  file: string;
+  line: number;
+  column: number;
+}
+
+interface Variable {
+  name: string;
+  value: Value;
+}
+```
+
+From the SDK: the state of the app at one hit of a breakpoint.
+
+- `time` — milliseconds since the Unix epoch.
+- `stack` — the call stack, innermost first, at most 20 frames. `file` is the original source path when the file
+  has a source map, otherwise the file's path or URL; `line` and `column` are 1-based.
+- `variables` — of the innermost frame: `this`, then the local, block and closure scopes, innermost first; a name
+  shadowed by an inner scope appears once. Global variables are not captured.
+- `truncated` — `true` when the snapshot reached 64 KiB or 10 ms; values not read by then are `unavailable`.
+
+```ts
+import type { Snapshot } from "@probex-platform/protocol";
+
+const total = (snapshot: Snapshot) => snapshot.variables.find((variable) => variable.name === "total")?.value;
+```
+
+### `Value`
+
+```ts
+type Value =
+  | { type: "undefined" }
+  | { type: "null" }
+  | { type: "boolean"; value: boolean }
+  | { type: "number"; value: number | "NaN" | "Infinity" | "-Infinity" | "-0" }
+  | { type: "bigint"; value: string }
+  | { type: "symbol"; value: string }
+  | { type: "string"; value: string; length: number }
+  | { type: "function"; name: string }
+  | { type: "date"; value: string }
+  | { type: "error"; className: string; message: string; stack?: string }
+  | { type: "object"; className: string; properties?: Variable[]; truncated?: boolean }
+  | { type: "array"; length: number; items?: Value[] }
+  | { type: "set"; size: number; items?: Value[] }
+  | { type: "map"; size: number; entries?: { key: Value; value: Value }[] }
+  | { type: "accessor" }
+  | { type: "circular" }
+  | { type: "unavailable"; reason: string };
+```
+
+One captured value, with its children inline. Why a tree:
+[ADR 0011](../adr/0011-encode-snapshot-values-as-a-nested-tree.md). What the [limits](#capturelimits) cut is
+marked in place:
+
+- a `string` keeps at most `maxStringLength` characters; `length` is the full length;
+- an `array`, `set` or `map` keeps at most `maxItems` children; `length` or `size` is the full count;
+- an `object` keeps at most `maxItems` own properties and sets `truncated` when it has more;
+- below `maxDepth`, `properties`, `items` and `entries` are left out;
+- `circular` stands for an object already on the path from the variable; `accessor` for a getter, which is never
+  run; `unavailable` for a value not read because of a limit or a failure, with the `reason`.
+
+A `date` is an ISO 8601 string. A reader shows a `type` it does not know as `unavailable`.
+
+```ts
+import type { Value } from "@probex-platform/protocol";
+
+const order: Value = {
+  type: "object",
+  className: "Order",
+  properties: [{ name: "id", value: { type: "string", value: "o-17", length: 4 } }],
+};
 ```
 
 ### `CLOSE_CODES`
