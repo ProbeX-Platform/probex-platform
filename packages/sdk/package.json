@@ -1,7 +1,8 @@
 {
   "name": "@probex-platform/sdk",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "ProbeX SDK: the debugger and the default hub connector, run inside the host app",
+  "type": "module",
   "exports": {
     ".": {
       "@probex-platform/source": "./src/index.ts",
@@ -12,7 +13,6 @@
   "files": [
     "dist"
   ],
-  "type": "module",
   "scripts": {
     "dev": "tsx --conditions=@probex-platform/source --watch src/index.ts",
     "build": "rm -rf ./dist && tsc -b",
@@ -22,7 +22,6 @@
   "keywords": [],
   "author": "Artem Horovyi",
   "license": "MIT",
-  "packageManager": "pnpm@10.26.2",
   "engines": {
     "node": ">=22"
   },
