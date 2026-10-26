@@ -1,9 +1,10 @@
 {
   "name": "@probex-platform/sdk",
   "version": "1.0.0",
-  "description": "",
+  "description": "ProbeX SDK: the debugger and the default hub connector, run inside the host app",
   "exports": {
     ".": {
+      "@probex-platform/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
