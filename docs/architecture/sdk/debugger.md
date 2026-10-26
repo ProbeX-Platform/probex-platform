@@ -4,7 +4,7 @@
 
 The debugger is the part of the SDK that sets breakpoints in the running app and captures snapshots without
 stopping it. It turns the hub's breakpoint list into V8 breakpoints, reads the variables at each hit within strict
-limits and sends them to the hub through a connector. How to use it: [API](../../api/sdk/debugger.md).
+limits, redacts secrets and sends them to the hub through a connector. How to use it: [API](../../api/sdk/debugger.md).
 
 ## Boundaries
 
@@ -14,6 +14,7 @@ limits and sends them to the hub through a connector. How to use it: [API](../..
   - the in-process inspector session and the V8 breakpoints in it;
   - matching repository paths and TypeScript lines to loaded scripts through source maps;
   - capturing snapshots and cutting values to [`CaptureLimits`](../../api/protocol.md#capturelimits);
+  - redacting secrets by name before a value is read;
   - rate limits, the pause budget and the status of each breakpoint.
 - Does not own:
   - moving messages, buffering and reconnects: the [connector](connector.md);
@@ -27,7 +28,10 @@ limits and sends them to the hub through a connector. How to use it: [API](../..
   - A pause lasts at most 10 ms, the app spends at most 20 ms per second paused, and a snapshot is at most 64 KiB.
   - Without breakpoints the inspector's `Debugger` domain is off, so V8 runs the app as if ProbeX were not there.
   - Runs no user code: getters are never called and nothing is evaluated.
+  - A redacted value is never read from V8, so it is not in the snapshot, the logs or the SDK's memory. Only the
+    host app sets the redaction rules; the hub cannot change them.
   - Debugs the main thread only; worker threads are not debugged.
+  - Does not start when the inspector is already open at `run()`, by `--inspect` or `inspector.open()`.
   - Resumes every pause it did not cause, including `debugger` statements, so another debugger attached to the
     process does not work while breakpoints are set.
   - Memory is bounded: 100 breakpoints, source maps up to 8 MiB each, decoded only for scripts that have
@@ -70,7 +74,8 @@ The parts live in `packages/sdk/src/debugger/`:
 - `SourceMaps` — finds the script and position for a repository path and line, and the original position for a
   script position.
 - `RateLimiter` — token buckets per breakpoint and per process, and the pause budget.
-- `Capture` — reads the stack and variables of a paused frame into a [`Snapshot`](../../api/protocol.md#snapshot).
+- `Capture` — reads the stack and variables of a paused frame into a [`Snapshot`](../../api/protocol.md#snapshot),
+  and redacts secrets by name as it goes.
 - `InspectorSession` — wraps `node:inspector`. On the main thread, `post` answers synchronously, also while the
   thread is paused; failures come back as results and are never thrown.
 
@@ -78,7 +83,8 @@ The parts live in `packages/sdk/src/debugger/`:
 
 ### Starting
 
-1. `run()` with `enabled` false logs one info line and does nothing.
+1. `run()` with `enabled` false logs one info line and does nothing. When `inspector.url()` returns a URL, another
+   debugger may be attached: it logs a warning and does nothing.
 2. It resolves the options: the value from `configure()`, then the environment, then the default. Without a hub URL
    and without a custom connector it logs an error and does not start.
 3. It creates a `HubConnector` or takes the custom one, subscribes to its messages and calls `connect()`.
@@ -128,10 +134,27 @@ The parts live in `packages/sdk/src/debugger/`:
 4. `Capture` reads up to 20 frames of the stack, mapped back to original positions where a decoded map exists, then
    `this` and the scopes of the innermost frame with synchronous `Runtime.getProperties` calls, depth first, within
    the largest limits of the allowed entries. At 10 ms or 64 KiB it stops: what is left is `unavailable` and the
-   snapshot is `truncated`.
+   snapshot is `truncated`. A name that matches the redaction rules, see [Redacting secrets](#redacting-secrets),
+   gets the value `redacted` and its value is not read.
 5. The thread resumes, and the pause time is charged to the budget. One pause serves every entry on the breakpoint.
 6. For each allowed entry, the capture is cut to that entry's own limits, without V8 calls, and sent as a
    [`snapshot`](../../api/protocol.md#snapshot) through the connector as a data message.
+
+### Redacting secrets
+
+1. At `run()` the rules are resolved once: the built-in names, plus the names from `redact`, then
+   `PROBEX_REDACT`. The app adds names; it cannot remove the built-in ones.
+2. Names are normalized before matching: lowercased, with `_`, `-` and `.` removed, so `api_key`, `API-KEY` and
+   `apiKey` are all `apikey`.
+3. A name matches when its normalized form contains a normalized rule, so `dbPassword` matches `password`. A
+   false match hides a harmless value; a missed one leaks a secret, so matching errs towards hiding.
+4. Rules apply to every name in the tree at any depth: variables, `this`, object properties and map entries whose
+   key is a string. Array items have no name and are not matched.
+5. A matching name keeps its place with the value `{ type: "redacted" }`; its value and children are never read.
+6. Built-in names: `password`, `passwd`, `pwd`, `secret`, `token`, `apikey`, `accesskey`, `privatekey`,
+   `credential`, `authorization`, `cookie`, `session`, `jwt`, `bearer`, `signature`.
+7. String contents are not scanned: a secret inside a value under a harmless name, such as a URL with a password,
+   is captured as is.
 
 ### Losing the connection
 
@@ -154,3 +177,4 @@ The parts live in `packages/sdk/src/debugger/`:
 - [0007. Deliver messages to the hub at most once](../../adr/0007-deliver-messages-to-the-hub-at-most-once.md)
 - [0010. Send the full breakpoint set on every change](../../adr/0010-send-the-full-breakpoint-set-on-every-change.md)
 - [0011. Encode snapshot values as a nested tree](../../adr/0011-encode-snapshot-values-as-a-nested-tree.md)
+- [0012. Redact secrets by name inside the SDK](../../adr/0012-redact-secrets-by-name-inside-the-sdk.md)

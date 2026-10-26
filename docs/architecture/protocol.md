@@ -20,6 +20,7 @@ version and the `Connector` interface. Each side builds against it without depen
     that owns them.
 - Constraints:
   - Types and constants only: no runtime logic, no side effects, no dependencies, no Node-only APIs.
+  - Built as ES modules and CommonJS, like the SDK: [ADR 0013](../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md).
   - Every export is public API of ProbeX and is documented in `docs/api/`.
   - Changes are backward-compatible or bump `PROTOCOL_VERSION`.
 
@@ -73,3 +74,5 @@ import `@probex-platform/protocol`. None of them imports another to get a protoc
 - [0009. Run the hub handshake in the connector](../adr/0009-run-the-hub-handshake-in-the-connector.md)
 - [0010. Send the full breakpoint set on every change](../adr/0010-send-the-full-breakpoint-set-on-every-change.md)
 - [0011. Encode snapshot values as a nested tree](../adr/0011-encode-snapshot-values-as-a-nested-tree.md)
+- [0012. Redact secrets by name inside the SDK](../adr/0012-redact-secrets-by-name-inside-the-sdk.md)
+- [0013. Publish the packages as ES modules and CommonJS](../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md)

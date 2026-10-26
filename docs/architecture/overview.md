@@ -25,6 +25,8 @@ What the host app can rely on:
 - Without breakpoints V8 runs the app as if ProbeX were not there. A pause lasts at most 10 ms, and at most 20 ms
   per second in total.
 - Memory and traffic are bounded: buffers drop the oldest data, and outgoing bytes are rate-limited.
+- Values of variables named like secrets, such as `password` or `token`, are redacted inside the app; the hub cannot
+  turn this off.
 
 ## Packages
 
@@ -34,6 +36,8 @@ What the host app can rely on:
   [architecture](sdk/overview.md), [API](../api/sdk/overview.md).
 - `@probex-platform/configs` — shared TypeScript, ESLint, Prettier and Vitest presets; dev-time only, never in the
   host app: [architecture](configs.md), [API](../api/configs.md).
+
+The protocol and the SDK ship as ES modules and CommonJS, so apps load them with `import` or `require()`.
 
 ## Key flows
 
@@ -45,7 +49,8 @@ One debugging session, end to end:
 3. [Applying breakpoints](sdk/debugger.md#applying-breakpoints) — the hub sends the full breakpoint set; the
    debugger maps repository lines to loaded scripts and reports each breakpoint's status.
 4. [Capturing a snapshot](sdk/debugger.md#capturing-a-snapshot) — a hit pauses the thread briefly, the variables
-   are read within limits and the snapshot goes to the connector.
+   are read within limits, [secrets are redacted](sdk/debugger.md#redacting-secrets) and the snapshot goes to the
+   connector.
 5. [Sending a message](sdk/connector.md#sending-a-message) — control messages first, snapshots buffered, batched
    and rate-limited.
 6. [Losing the connection](sdk/debugger.md#losing-the-connection) — breakpoints stay set; after the reconnect the
@@ -67,3 +72,5 @@ Changing the contract between peers: [changing the protocol](protocol.md#changin
 - [0009. Run the hub handshake in the connector](../adr/0009-run-the-hub-handshake-in-the-connector.md)
 - [0010. Send the full breakpoint set on every change](../adr/0010-send-the-full-breakpoint-set-on-every-change.md)
 - [0011. Encode snapshot values as a nested tree](../adr/0011-encode-snapshot-values-as-a-nested-tree.md)
+- [0012. Redact secrets by name inside the SDK](../adr/0012-redact-secrets-by-name-inside-the-sdk.md)
+- [0013. Publish the packages as ES modules and CommonJS](../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md)

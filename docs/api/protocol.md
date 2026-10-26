@@ -6,7 +6,7 @@
 pnpm add @probex-platform/protocol
 ```
 
-Types and constants only. `@probex-platform/sdk` installs it for you; install it yourself to write a custom
+Types and constants only, for `import` and `require()`. `@probex-platform/sdk` installs it for you; install it yourself to write a custom
 connector or hub.
 
 ## Exports
@@ -342,6 +342,7 @@ type Value =
   | { type: "map"; size: number; entries?: { key: Value; value: Value }[] }
   | { type: "accessor" }
   | { type: "circular" }
+  | { type: "redacted" }
   | { type: "unavailable"; reason: string };
 ```
 
@@ -354,7 +355,9 @@ marked in place:
 - an `object` keeps at most `maxItems` own properties and sets `truncated` when it has more;
 - below `maxDepth`, `properties`, `items` and `entries` are left out;
 - `circular` stands for an object already on the path from the variable; `accessor` for a getter, which is never
-  run; `unavailable` for a value not read because of a limit or a failure, with the `reason`.
+  run; `unavailable` for a value not read because of a limit or a failure, with the `reason`;
+- `redacted` stands for a value whose name matches the SDK's
+  [redaction rules](sdk/debugger.md#debuggeroptions); it was never read.
 
 A `date` is an ISO 8601 string. A reader shows a `type` it does not know as `unavailable`.
 

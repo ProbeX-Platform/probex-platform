@@ -3,36 +3,102 @@
 Open-source runtime debugger for Node.js: set non-breaking breakpoints in a running application and get snapshots
 of its state, without changing code or redeploying.
 
-> Early development. Packages are not published yet and APIs are not stable.
+> Early development. The design and API below are decided, but the packages are not implemented or published yet,
+> and the API may still change.
 
 ## How it works
 
-- `@probex-platform/sdk` runs inside your app. It sets breakpoints through `node:inspector`, captures the call stack and
-  variables when one is hit, and resumes at once. Its built-in connector carries breakpoints and snapshots to and
-  from the ProbeX hub over one outbound WebSocket, so your app opens no ports. It never crashes, throws into or
-  blocks your app.
-- `@probex-platform/protocol` holds the public types: `Breakpoint`, `Snapshot`, the `Connector` interface and the protocol.
+```text
+┌──────────────────── Your app (Node.js) ────────────────────┐
+│ ┌────┐  set breakpoints  ┌──────────────────────┐          │  snapshots (outbound wss)  ┌─────┐
+│ │ V8 │◀──────────────────│ @probex-platform/sdk │──────────┼───────────────────────────▶│ Hub │
+│ │    │──────────────────▶│                      │◀─────────┼────────────────────────────│     │
+│ └────┘ stack, variables  └──────────────────────┘          │  breakpoints               └─────┘
+└────────────────────────────────────────────────────────────┘
+```
 
-Secrets are redacted inside your app before a snapshot leaves it. See the
-[architecture overview](docs/architecture/overview.md).
+1. You add `@probex-platform/sdk` to your app and start it at boot.
+2. The SDK opens one outbound WebSocket to the ProbeX hub, so your app opens no ports.
+3. The hub sends breakpoints by file and line in your repository, such as `src/orders/checkout.ts:42`.
+4. When that line runs, the SDK records the call stack and variables and resumes your code at once.
+5. The snapshot goes to the hub, where you read it.
+
+What your app can rely on:
+
+- ProbeX never throws into, crashes or blocks your app. If something fails, ProbeX turns itself off.
+- Without breakpoints your app runs as if ProbeX were not there. A pause lasts at most 10 ms, and at most 20 ms per
+  second in total.
+- Memory and network use are bounded: old data is dropped and outgoing traffic is rate-limited.
+- Values of variables named like secrets, such as `password`, `token` or `apiKey`, are replaced with `redacted`
+  inside your app, so they never reach the hub. Add your own names with `PROBEX_REDACT`.
+
+## Quick start
+
+```sh
+pnpm add @probex-platform/sdk
+```
+
+Set where to send snapshots, in the deployment:
+
+```sh
+PROBEX_HUB_URL=wss://hub.example.com/probex
+PROBEX_TOKEN=<your token>
+PROBEX_SERVICE=checkout
+```
+
+Start ProbeX as early as possible and stop it on shutdown:
+
+```ts
+import { probex } from "@probex-platform/sdk";
+
+probex.run();
+
+process.once("SIGTERM", async () => {
+  await probex.stop(); // sends buffered snapshots first
+  process.exit(0);
+});
+```
+
+## Configuration
+
+Every setting can come from an environment variable or from `probex.configure()` in code; code wins.
+
+| Variable         | What it sets                                              | Default             |
+| ---------------- | --------------------------------------------------------- | ------------------- |
+| `PROBEX_ENABLED` | `false` turns ProbeX off without a code change            | `true`              |
+| `PROBEX_HUB_URL` | the hub's `wss://` URL                                    | required            |
+| `PROBEX_TOKEN`   | the token the hub authenticates your app by               | none                |
+| `PROBEX_SERVICE` | the service name the hub targets breakpoints by           | none                |
+| `PROBEX_LABELS`  | extra targeting labels, such as `team=payments,region=eu` | no labels           |
+| `PROBEX_REDACT`  | extra names to redact, such as `iban,ssn`                 | built-in names only |
+
+Logger, buffers, batching, rate limits and the rest: [SDK API](docs/api/sdk/overview.md).
 
 ## Requirements
 
-Node.js ≥ 22.
+- Node.js 22 or later, with `import` or `require()`. The main thread is debugged; worker threads are not.
+- TypeScript apps ship source maps, inline or as `.map` files next to the JavaScript. Bundled output is not
+  supported.
+- No other debugger attached to the process: while breakpoints are set, ProbeX resumes every pause it did not cause.
+  With `--inspect`, ProbeX does not start.
+
+## Beyond the defaults
+
+- **Another transport** — implement the `Connector` interface from `@probex-platform/protocol` and pass it to the
+  SDK: [protocol API](docs/api/protocol.md#connector).
+- **Your own hub** — speak the ProbeX protocol: [protocol API](docs/api/protocol.md).
 
 ## Documentation
 
+- [API](docs/api/overview.md) — every package, option and message.
+- [Architecture](docs/architecture/overview.md) — how ProbeX works inside.
+- [Architecture decisions](docs/adr/) — why it works this way.
 - [Vision](docs/vision.md) — goals and principles.
-- [Architecture](docs/architecture/overview.md) — how ProbeX is built.
-- [API](docs/api/) — public API of each package.
-- [Architecture decisions](docs/adr/) — why things are built this way.
 
 ## Contributing
 
-- [Development](docs/development.md) — set up the repo, commands, branches and pull requests.
-- [CLAUDE.md](CLAUDE.md) — rules and workflow for AI agents working in this repo.
-- [Coding rules](.claude/rules/) — TypeScript, SDK, protocol, testing, docs and ADR conventions.
+See the [development guide](docs/development.md).
 
 ## Security and license
 
-See [SECURITY.md](SECURITY.md). License: [MIT](LICENSE).
+Report vulnerabilities as described in [SECURITY.md](SECURITY.md). License: [MIT](LICENSE).
