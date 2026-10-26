@@ -38,6 +38,7 @@ the default.
 | `PROBEX_TOKEN`   | `token`   | none                                        |
 | `PROBEX_SERVICE` | `service` | none                                        |
 | `PROBEX_LABELS`  | `labels`  | no labels; format `team=payments,region=eu` |
+| `PROBEX_REDACT`  | `redact`  | built-in names only; format `iban,ssn`      |
 
 Set them in the deployment, then start the debugger as early as possible and stop it on shutdown:
 

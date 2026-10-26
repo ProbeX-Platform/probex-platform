@@ -54,7 +54,8 @@ is logged to the [`logger`](#debuggeroptions). After a failed `run()` the debugg
   started is stopped, and the debugger does not start.
 - An unexpected error inside the debugger while it runs: it is logged and the debugger stops itself, as if
   `stop()` had been called.
-- An invalid option value or `PROBEX_ENABLED`: a warning is logged and the default is used.
+- An invalid option value or `PROBEX_ENABLED`: a warning is logged and the default is used. An empty or invalid
+  `redact` entry is skipped with a warning; the built-in names always apply.
 - The logger throws: the error is ignored; the debugger keeps working.
 
 ```ts
@@ -90,6 +91,7 @@ interface DebuggerOptions {
   token?: string;
   service?: string;
   labels?: Record<string, string>;
+  redact?: string[];
   logger?: Logger;
   hubConnector?: Pick<HubConnectorOptions, "buffer" | "batch" | "rateLimit" | "reconnect" | "closeTimeoutMs">;
   connector?: Connector;
@@ -104,6 +106,13 @@ The options of [`probex.configure()`](#probex). Every field is optional.
   does nothing, so a deployment can switch ProbeX off without a code change. Default `true`.
 - `url`, `token`, `service`, `labels` — passed to the default connector, with the same environment variables,
   defaults and rules as in [`HubConnector`](connector.md#hubconnector).
+- `redact` — `string[]`, env `PROBEX_REDACT` as names separated by commas, such as `iban,ssn,clientKey`. Names
+  whose values are replaced with `redacted` in snapshots, added to the built-in ones (`password`, `secret`,
+  `token`, `apikey`, `authorization`, `cookie`, `session` and more). Case, `_`, `-` and `.` are ignored, and a
+  name matches every variable or property whose name contains it, at any depth. The built-in names cannot be
+  removed. A passed array replaces the env value. Default: built-in names only. Rules:
+  [redacting secrets](../../architecture/sdk/debugger.md#redacting-secrets),
+  [ADR 0012](../../adr/0012-redact-secrets-by-name-inside-the-sdk.md).
 - `logger` — [`Logger`](connector.md#logger), used by the debugger and by the default connector. Default: `console`
   for `warn` and `error`, prefixed with `[probex]`.
 - `hubConnector` — tuning of the default connector: buffer, batch, rate limit, reconnect delays and close timeout,
@@ -118,6 +127,7 @@ import { probex } from "@probex-platform/sdk";
 probex.configure({
   service: "checkout",
   labels: { region: "eu" },
+  redact: ["iban", "ssn"],
   hubConnector: { batch: { flushIntervalMs: 250 } },
 });
 ```

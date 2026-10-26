@@ -20,7 +20,7 @@
 
 - [Debugger](debugger.md) — the [`probex`](../../api/sdk/debugger.md#probex) object. Turns the hub's breakpoint
   list into V8 breakpoints through an in-process inspector session and captures snapshots within strict time, size
-  and rate limits.
+  and rate limits, with secrets redacted by name.
 - [Connector](connector.md) — `HubConnector`, the default transport: the `hello` → `welcome` handshake, queues,
   batching, the rate limit and reconnects. A custom [`Connector`](../../api/protocol.md#connector) can replace it;
   the debugger sees only that interface.
