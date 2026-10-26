@@ -34,6 +34,10 @@ is bounded, and problems go to the configured [`Logger`](../../api/sdk/connector
 `packages/sdk/src/debugger/` and `packages/sdk/src/connector/`; the connector imports no other SDK module, so it can
 move to its own package.
 
+The package is built twice, as ES modules to `dist/esm/` and as CommonJS to `dist/cjs/`, and its `exports` map
+picks one for `import` or `require()`; see [ADR 0013](../../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md). Both builds share one
+debugger per process, so an app that loads both still has one `probex`. Source files have no top-level `await`.
+
 ## Key flows
 
 - [Starting the debugger](debugger.md#starting)
@@ -50,5 +54,6 @@ move to its own package.
 - [0002. Ship the default connector inside the SDK](../../adr/0002-ship-the-default-connector-inside-the-sdk.md)
 - [0003. Configure the connector from options, then env](../../adr/0003-configure-the-connector-from-options-then-env.md)
 - [0008. Use WebSocket for the hub connection](../../adr/0008-use-websocket-for-the-hub-connection.md)
+- [0013. Publish the packages as ES modules and CommonJS](../../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md)
 
 Decisions of one component: [debugger](debugger.md#decisions), [connector](connector.md#decisions).

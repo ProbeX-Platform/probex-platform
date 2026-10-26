@@ -6,10 +6,10 @@
 pnpm add @probex-platform/sdk
 ```
 
-- Node.js 22 or later. The main thread is debugged; worker threads are not.
+- Node.js 22 or later. Works with `import` and `require()`. The main thread is debugged; worker threads are not.
 - TypeScript: ship source maps, inline or as `.map` files next to the JavaScript. Bundled output is not supported.
 - Do not attach another debugger to the process: while breakpoints are set, ProbeX resumes every pause it did not
-  cause.
+  cause. With `--inspect`, ProbeX does not start.
 
 ## Exports
 
@@ -43,7 +43,7 @@ the default.
 Set them in the deployment, then start the debugger as early as possible and stop it on shutdown:
 
 ```ts
-import { probex } from "@probex-platform/sdk";
+import { probex } from "@probex-platform/sdk"; // or: const { probex } = require("@probex-platform/sdk");
 
 probex.run();
 

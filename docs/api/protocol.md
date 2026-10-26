@@ -6,7 +6,7 @@
 pnpm add @probex-platform/protocol
 ```
 
-Types and constants only. `@probex-platform/sdk` installs it for you; install it yourself to write a custom
+Types and constants only, for `import` and `require()`. `@probex-platform/sdk` installs it for you; install it yourself to write a custom
 connector or hub.
 
 ## Exports

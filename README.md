@@ -76,10 +76,11 @@ Logger, buffers, batching, rate limits and the rest: [SDK API](docs/api/sdk/over
 
 ## Requirements
 
-- Node.js 22 or later. The main thread is debugged; worker threads are not.
+- Node.js 22 or later, with `import` or `require()`. The main thread is debugged; worker threads are not.
 - TypeScript apps ship source maps, inline or as `.map` files next to the JavaScript. Bundled output is not
   supported.
 - No other debugger attached to the process: while breakpoints are set, ProbeX resumes every pause it did not cause.
+  With `--inspect`, ProbeX does not start.
 
 ## Beyond the defaults
 

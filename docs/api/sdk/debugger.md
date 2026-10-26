@@ -20,7 +20,7 @@ process alive.
 The hub sets breakpoints by the file's path in your repository. For TypeScript, ship source maps: inline or as
 `.map` files next to the JavaScript; bundled output is not supported. While breakpoints are set, the debugger
 resumes every pause it did not cause, including `debugger` statements, so do not attach another debugger to the
-process. Design: [debugger architecture](../../architecture/sdk/debugger.md).
+process. When the process runs with `--inspect`, ProbeX does not start. Design: [debugger architecture](../../architecture/sdk/debugger.md).
 
 **Methods**
 
@@ -50,6 +50,8 @@ is logged to the [`logger`](#debuggeroptions). After a failed `run()` the debugg
 `configure()` and `run()` can be called again.
 
 - No `url` and no `connector`: `run()` logs an error and the debugger does not start.
+- The inspector is already open, by `--inspect` or `inspector.open()`: `run()` logs a warning and the debugger
+  does not start.
 - The inspector session cannot be opened or anything else fails while starting: an error is logged, whatever was
   started is stopped, and the debugger does not start.
 - An unexpected error inside the debugger while it runs: it is logged and the debugger stops itself, as if

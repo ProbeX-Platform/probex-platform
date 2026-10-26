@@ -31,6 +31,7 @@ limits, redacts secrets and sends them to the hub through a connector. How to us
   - A redacted value is never read from V8, so it is not in the snapshot, the logs or the SDK's memory. Only the
     host app sets the redaction rules; the hub cannot change them.
   - Debugs the main thread only; worker threads are not debugged.
+  - Does not start when the inspector is already open at `run()`, by `--inspect` or `inspector.open()`.
   - Resumes every pause it did not cause, including `debugger` statements, so another debugger attached to the
     process does not work while breakpoints are set.
   - Memory is bounded: 100 breakpoints, source maps up to 8 MiB each, decoded only for scripts that have
@@ -82,7 +83,8 @@ The parts live in `packages/sdk/src/debugger/`:
 
 ### Starting
 
-1. `run()` with `enabled` false logs one info line and does nothing.
+1. `run()` with `enabled` false logs one info line and does nothing. When `inspector.url()` returns a URL, another
+   debugger may be attached: it logs a warning and does nothing.
 2. It resolves the options: the value from `configure()`, then the environment, then the default. Without a hub URL
    and without a custom connector it logs an error and does not start.
 3. It creates a `HubConnector` or takes the custom one, subscribes to its messages and calls `connect()`.
