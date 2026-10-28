@@ -53,6 +53,8 @@ architecture doc `.claude/templates/architecture.md`, new API doc `.claude/templ
   and belongs to the user.
 - Commits and PR titles: Conventional Commits, ≤ 100 chars, types from `docs/development.md`. PRs are merged with
   merge commits, so every commit lands in history.
+- Before carrying out a plan that changes the public API or protocol, or adds a package or dependency, delegate it
+  to `critic` and show its points with the plan; the skills above already do this at their own steps.
 - Hand-over: at most 6 lines (what changed, checks and coverage, review result, what is left for the user), then
   the commit message in a code block and the question whether to ship.
 - Ship only after the user's explicit OK: commit → `git push -u` → `gh pr create --base staging` → print the PR
