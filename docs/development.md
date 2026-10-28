@@ -31,15 +31,8 @@ pnpm install   # install and link workspace packages, turn on the git hooks
 pnpm verify    # everything must pass on a fresh clone
 ```
 
-`pnpm install` points git at `.githooks/`, which check your work before it leaves the machine, where it is still
-cheap to fix:
-
-| Hook         | Runs on      | Checks                                                                        |
-| ------------ | ------------ | ----------------------------------------------------------------------------- |
-| `commit-msg` | `git commit` | the subject follows the [commit rule](#naming), before the commit exists      |
-| `pre-push`   | `git push`   | subjects of commits not on the remote yet, then `pnpm verify` (a few seconds) |
-
-Each prints `✓` or what is wrong and how to fix it. `--no-verify` skips them once; CI still checks the same.
+`pnpm install` also turns on the git hooks that check your work before it leaves the machine: see
+[Checks](#checks).
 
 ## Commands
 
@@ -55,7 +48,7 @@ pnpm verify:fix → auto-fix lint and formatting
 ```
 
 One package: `pnpm --filter @probex-platform/sdk test`, `pnpm --filter @probex-platform/node-basic dev`. CI runs
-`pnpm verify` on every pull request.
+the same scripts on every pull request: see [Checks](#checks).
 
 ## Testing
 
@@ -83,11 +76,11 @@ agents also follow [CLAUDE.md](../CLAUDE.md).
 
 ## Naming
 
-| Name           | Rule                                        | Example                             | Checked by                   |
-| -------------- | ------------------------------------------- | ----------------------------------- | ---------------------------- |
-| Branch         | `<type>/<kebab-case>`, ≤ 50 chars           | `feat/sdk-snapshots`                | AI agents only               |
-| Commit subject | `<type>[(<scope>)][!]: <desc>`, ≤ 100 chars | `feat(sdk): capture closure scopes` | `commit-msg`, `pre-push`, CI |
-| PR title       | same as a commit subject                    | `fix(protocol): accept empty ids`   | CI                           |
+| Name           | Rule                                  | Example                    | [Checked](#checks) by |
+| -------------- | ------------------------------------- | -------------------------- | --------------------- |
+| Branch         | `<type>/<kebab-case>`, ≤ 50 chars     | `feat/sdk-snapshots`       | AI agents only        |
+| Commit subject | `<type>[(<scope>)][!]: <desc>`, ≤ 100 | `feat(sdk): add snapshots` | git hooks, CI         |
+| PR title       | same as a commit subject              | `fix(protocol): empty ids` | CI                    |
 
 - **Branch.** Lowercase `a-z`, `0-9` and single `-`. Branch from an up-to-date `staging`. `main` is release-only and
   accepts pull requests only from `staging`. A wrong branch name is cheap to live with, so only AI agents are held
@@ -118,3 +111,67 @@ split into commits, or takes the main type and a scope: `ci(infra): …`.
 
 `.github/scripts/check-names.sh` is the source of these rules; CI and the git hooks run it, and it prints the rules
 with examples on every failure. Check a name by hand: `bash .github/scripts/check-names.sh commit "<subject>"`.
+
+## Checks
+
+Each rule is checked as early as possible, where it is cheapest to fix. Every check prints `✓`, or what is wrong
+and how to fix it.
+
+```text
+git commit ──▶ commit-msg ──▶ git push ──▶ pre-push ──▶ pull request ──▶ CI ──▶ review ──▶ merge
+```
+
+### On your machine
+
+`pnpm install` points git at `.githooks/`:
+
+| Hook         | Runs on      | Checks                                                                              |
+| ------------ | ------------ | ----------------------------------------------------------------------------------- |
+| `commit-msg` | `git commit` | the subject follows [Naming](#naming), before the commit exists                     |
+| `pre-push`   | `git push`   | subjects of commits on no remote yet, then `pnpm verify` on the working tree (~7 s) |
+
+- Merge commits and `fixup!`, `squash!`, `amend!` commits pass `commit-msg`; `pre-push` stops the ones left
+  unsquashed: run `git rebase -i --autosquash <base>`.
+- `--no-verify` skips a hook once; CI still runs the same checks.
+- No hooks, in a clone made before them or after `pnpm install --ignore-scripts`? Run `pnpm install` again or
+  `git config core.hooksPath .githooks`. Turn them off with `git config --unset core.hooksPath`.
+
+### On a pull request
+
+CI runs on every pull request into `staging` or `main`, and again on each new commit or rename. The `ci` job, in
+order:
+
+| Step            | Fails when                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Only staging    | a pull request into `main` comes from a branch other than `staging`                         |
+| PR title        | the title breaks [Naming](#naming); fix it with `gh pr edit <number> --title "…"`           |
+| Commit messages | a non-merge commit subject breaks [Naming](#naming); skipped for release PRs from `staging` |
+| Linter … Tests  | `pnpm lint`, `pnpm format`, `pnpm typecheck` or `pnpm test:coverage` fails                  |
+| Build           | `pnpm build` fails                                                                          |
+
+The `dependency-review` job fails when the pull request adds a dependency with a known vulnerability of high
+severity or worse. Dependabot pull requests skip the name steps.
+
+### Before merge
+
+`main` and `staging` change only through pull requests: no direct or force pushes, no deletion. A pull request
+merges when:
+
+- `ci` and `dependency-review` are green;
+- a [code owner](../.github/CODEOWNERS) approved it after its last push, and every review thread is resolved;
+- every commit is [signed](https://docs.github.com/en/authentication/managing-commit-signature-verification).
+
+Pull requests are merged with merge commits only, so every commit lands in history as it is. Pull requests from
+forks wait for a maintainer to approve their CI run.
+
+### AI agents
+
+Claude Code runs these hooks from [.claude/settings.json](../.claude/settings.json) on top of the checks above:
+
+| Hook             | Runs                      | Does                                                               |
+| ---------------- | ------------------------- | ------------------------------------------------------------------ |
+| `guard-git.sh`   | before each shell command | blocks bad branch names, work on `main`/`staging`, merges          |
+| `format-file.sh` | after each file edit      | runs Prettier and `eslint --fix` on the file, reports what is left |
+| `stop-verify.sh` | before the agent finishes | requires a green `pnpm verify` (`format` if only Markdown changed) |
+
+Agents are also denied force-pushes, `gh pr merge` and edits to `pnpm-lock.yaml`.
