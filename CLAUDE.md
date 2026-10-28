@@ -29,7 +29,7 @@ Run checks only through `package.json` scripts, never retyped tool commands, so 
 
 ## Tracker
 
-Trello board https://trello.com/b/q7Sot5OY/probex-platform; card format `.claude/templates/card.md`, new
+Trello board https://trello.com/b/hzrnwdVz/probex-platform; card format `.claude/templates/card.md`, new
 architecture doc `.claude/templates/architecture.md`, new API doc `.claude/templates/api.md`.
 
 | List        | Holds                  | Who moves cards into it                            |
