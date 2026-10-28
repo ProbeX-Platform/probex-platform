@@ -19,6 +19,9 @@ including the messages they exchange (the protocol), and the public types end us
   version.
 - Backward-compatible: add optional fields; never rename, remove or retype. A breaking change bumps the protocol
   version.
+- Each protocol version's messages and data types live in `src/v<N>.ts` and fix `version` to the literal `<N>`, so a
+  bump never retypes an older version. `src/index.ts` holds `PROTOCOL_VERSION`, `CLOSE_CODES` and `Connector`, which
+  is typed by the current version's `Message`, and re-exports the current version's types.
 
 ```ts
 // Bad
@@ -27,11 +30,9 @@ export interface Snapshot {
   frames: Map<string, Frame>;
 }
 
-// Good
-export const PROTOCOL_VERSION = 1;
-
+// Good (src/v1.ts)
 export interface Snapshot {
-  version: typeof PROTOCOL_VERSION;
+  version: 1;
   capturedAt: string; // ISO 8601
   frames: Frame[];
   tags?: string[]; // added later, optional for old clients

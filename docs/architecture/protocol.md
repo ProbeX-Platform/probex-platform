@@ -62,7 +62,9 @@ import `@probex-platform/protocol`. None of them imports another to get a protoc
 ### Changing the protocol
 
 1. An addition that old peers can ignore, such as a new optional field, keeps `PROTOCOL_VERSION`.
-2. Renaming, removing or retyping anything a peer reads bumps `PROTOCOL_VERSION`.
+2. Renaming, removing or retyping anything a peer reads bumps `PROTOCOL_VERSION`. Each version's messages and data
+   types live in their own module, `src/v<N>.ts`, with `version` fixed to `<N>`; a bump adds `src/v<N+1>.ts` and
+   leaves the older modules as they are.
 3. Either change updates `docs/api/protocol.md` in the same pull request.
 
 ## Decisions

@@ -343,6 +343,14 @@ describe("messages", () => {
     expect(welcome.version).toBe(1);
   });
 
+  it("re-exports the messages of the current protocol version", () => {
+    const welcome: Welcome = { version: PROTOCOL_VERSION, type: "welcome" };
+
+    expectTypeOf<Message["version"]>().toEqualTypeOf<typeof PROTOCOL_VERSION>();
+    expectTypeOf<Batch["version"]>().toEqualTypeOf<typeof PROTOCOL_VERSION>();
+    expect(welcome.version).toBe(PROTOCOL_VERSION);
+  });
+
   it("rejects a message with a wrong version literal", () => {
     // @ts-expect-error version 2 is not the protocol version
     const welcome: Welcome = { version: 2, type: "welcome" };
