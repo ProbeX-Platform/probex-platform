@@ -37,7 +37,9 @@ An open design question → stop and suggest `/architect`.
 
 - **S** — ≤ 2 files, behavior is clear: go.
 - **M** — several files, clear goal: a 3–6 line plan inline, then go.
-- **L** — public API, protocol, new package or dependency, or ambiguity: write the plan and wait for approval.
+- **L** — public API, protocol, new package or dependency, or ambiguity: write the plan, delegate to `critic` without
+  a `model` override with the card link and the plan, and revise the plan for every blocker and major or say why
+  not. Show the plan with the critic's points and wait for approval.
 
 ## 5. Implement with tests
 
