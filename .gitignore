@@ -5,3 +5,8 @@
 **/tsconfig.tsbuildinfo
 **/TODO
 .claude/settings.local.json
+
+# Editors
+.zed/
+.vscode/
+.idea/
