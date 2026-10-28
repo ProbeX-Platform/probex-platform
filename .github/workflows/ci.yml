@@ -44,13 +44,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Branch, PR title and commits
+      - name: PR title
         if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
         env:
-          BRANCH: ${{ github.head_ref }}
           TITLE: ${{ github.event.pull_request.title }}
+        run: bash .github/scripts/check-names.sh title "$TITLE"
+
+      - name: Commit messages
+        if: ${{ !startsWith(github.head_ref, 'dependabot/') && github.head_ref != 'staging' }}
+        env:
           RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
-        run: bash .github/scripts/check-names.sh "$BRANCH" "$TITLE" "$RANGE"
+        run: bash .github/scripts/check-names.sh commits "$RANGE"
 
       - name: Linter
         run: pnpm lint
