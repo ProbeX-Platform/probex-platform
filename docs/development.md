@@ -27,9 +27,12 @@ Requires Node.js ≥ 22 and pnpm 10.
 ```sh
 git clone https://github.com/ProbeX-Platform/probex-platform.git
 cd probex-platform
-pnpm install   # install and link workspace packages
+pnpm install   # install and link workspace packages, turn on the git hooks
 pnpm verify    # everything must pass on a fresh clone
 ```
+
+`pnpm install` also turns on the git hooks that check your work before it leaves the machine: see
+[Checks](#checks).
 
 ## Commands
 
@@ -45,7 +48,7 @@ pnpm verify:fix → auto-fix lint and formatting
 ```
 
 One package: `pnpm --filter @probex-platform/sdk test`, `pnpm --filter @probex-platform/node-basic dev`. CI runs
-`pnpm verify` on every pull request.
+the same scripts on every pull request: see [Checks](#checks).
 
 ## Testing
 
@@ -66,34 +69,109 @@ Full rules: [testing](../.claude/rules/testing.md).
    [changing the protocol](architecture/protocol.md#changing-the-protocol).
 4. **SDK.** It runs in someone else's production app: never throw into, crash or block it; no sync I/O on the hot
    path; no new runtime dependency without an ADR. See [SDK rules](../.claude/rules/sdk.md).
-5. **Check.** `pnpm verify`, then open a pull request to `staging`.
+5. **Check.** `pnpm verify`, then open a pull request to `staging` with a [named](#naming) branch and title.
 
 Coding rules for TypeScript, the SDK, the protocol, tests, docs and ADRs: [.claude/rules](../.claude/rules/). AI
 agents also follow [CLAUDE.md](../CLAUDE.md).
 
-## Branches and pull requests
+## Naming
 
-- Branch from an up-to-date `staging` as `<type>/<kebab-case>`, ≤ 50 chars, lowercase only. `main` is
-  release-only and accepts pull requests only from `staging`.
-- Commits and PR titles follow Conventional Commits, ≤ 100 chars, such as `feat(sdk): capture closure scopes`.
-  PRs go to `staging` and are merged with merge commits, so every commit must follow the rule. Release PRs from
-  `staging` into `main` check only the title.
-- Use one of these types; release tooling maps them to the changelog and semver. A change that spans several types
-  is split into commits, or takes the main type and a scope: `ci(infra): …`.
+| Name           | Rule                                  | Example                    | [Checked](#checks) by |
+| -------------- | ------------------------------------- | -------------------------- | --------------------- |
+| Branch         | `<type>/<kebab-case>`, ≤ 50 chars     | `feat/sdk-snapshots`       | AI agents only        |
+| Commit subject | `<type>[(<scope>)][!]: <desc>`, ≤ 100 | `feat(sdk): add snapshots` | git hooks, CI         |
+| PR title       | same as a commit subject              | `fix(protocol): empty ids` | CI                    |
 
-  | Type       | For                                            |
-  | ---------- | ---------------------------------------------- |
-  | `feat`     | new behavior for users of the packages (minor) |
-  | `fix`      | bug fix for users of the packages (patch)      |
-  | `perf`     | faster or lighter, same behavior               |
-  | `refactor` | code change with the same behavior             |
-  | `docs`     | documentation only                             |
-  | `test`     | tests only                                     |
-  | `build`    | build, dependencies, package and tool configs  |
-  | `ci`       | CI workflows, hooks and their scripts          |
-  | `chore`    | anything else that does not reach users        |
-  | `style`    | formatting only                                |
-  | `revert`   | reverts an earlier commit                      |
+- **Branch.** Lowercase `a-z`, `0-9` and single `-`. Branch from an up-to-date `staging`. `main` is release-only and
+  accepts pull requests only from `staging`. A wrong branch name is cheap to live with, so only AI agents are held
+  to it.
+- **Commit subject.** [Conventional Commits](https://www.conventionalcommits.org): type and scope in any case,
+  scope of `a-z`, `0-9` and `-`, `!` for a breaking change, one space after `:`. PRs go to `staging` and are merged
+  with merge commits, so every commit lands in history and must follow the rule; merge commits themselves are
+  exempt. A pushed commit takes a reword and a force-push to fix, which is why the git hooks check it first.
+- **PR title.** Becomes the merge commit's title. Rename a PR with `gh pr edit <number> --title "…"`; CI re-runs.
+  Release PRs from `staging` into `main` check only the title.
 
-- CI checks the names with `.github/scripts/check-names.sh`, the source of these rules. Run it before pushing:
-  `bash .github/scripts/check-names.sh <branch> "<pr title>" origin/staging..HEAD`.
+Use one of these types; release tooling maps them to the changelog and semver. A change that spans several types is
+split into commits, or takes the main type and a scope: `ci(infra): …`.
+
+| Type       | For                                            |
+| ---------- | ---------------------------------------------- |
+| `feat`     | new behavior for users of the packages (minor) |
+| `fix`      | bug fix for users of the packages (patch)      |
+| `perf`     | faster or lighter, same behavior               |
+| `refactor` | code change with the same behavior             |
+| `docs`     | documentation only                             |
+| `test`     | tests only                                     |
+| `build`    | build, dependencies, package and tool configs  |
+| `ci`       | CI workflows, hooks and their scripts          |
+| `chore`    | anything else that does not reach users        |
+| `style`    | formatting only                                |
+| `revert`   | reverts an earlier commit                      |
+
+`.github/scripts/check-names.sh` is the source of these rules; CI and the git hooks run it, and it prints the rules
+with examples on every failure. Check a name by hand: `bash .github/scripts/check-names.sh commit "<subject>"`.
+
+## Checks
+
+Each rule is checked as early as possible, where it is cheapest to fix. Every check prints `✓`, or what is wrong
+and how to fix it.
+
+```text
+git commit ──▶ commit-msg ──▶ git push ──▶ pre-push ──▶ pull request ──▶ CI ──▶ review ──▶ merge
+```
+
+### On your machine
+
+`pnpm install` points git at `.githooks/`:
+
+| Hook         | Runs on      | Checks                                                                              |
+| ------------ | ------------ | ----------------------------------------------------------------------------------- |
+| `commit-msg` | `git commit` | the subject follows [Naming](#naming), before the commit exists                     |
+| `pre-push`   | `git push`   | subjects of commits on no remote yet, then `pnpm verify` on the working tree (~7 s) |
+
+- Merge commits and `fixup!`, `squash!`, `amend!` commits pass `commit-msg`; `pre-push` stops the ones left
+  unsquashed: run `git rebase -i --autosquash <base>`.
+- `--no-verify` skips a hook once; CI still runs the same checks.
+- No hooks, in a clone made before them or after `pnpm install --ignore-scripts`? Run `pnpm install` again or
+  `git config core.hooksPath .githooks`. Turn them off with `git config --unset core.hooksPath`.
+
+### On a pull request
+
+CI runs on every pull request into `staging` or `main`, and again on each new commit or rename. The `ci` job, in
+order:
+
+| Step            | Fails when                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Only staging    | a pull request into `main` comes from a branch other than `staging`                         |
+| PR title        | the title breaks [Naming](#naming); fix it with `gh pr edit <number> --title "…"`           |
+| Commit messages | a non-merge commit subject breaks [Naming](#naming); skipped for release PRs from `staging` |
+| Linter … Tests  | `pnpm lint`, `pnpm format`, `pnpm typecheck` or `pnpm test:coverage` fails                  |
+| Build           | `pnpm build` fails                                                                          |
+
+The `dependency-review` job fails when the pull request adds a dependency with a known vulnerability of high
+severity or worse. Dependabot pull requests skip the name steps.
+
+### Before merge
+
+`main` and `staging` change only through pull requests: no direct or force pushes, no deletion. A pull request
+merges when:
+
+- `ci` and `dependency-review` are green;
+- a [code owner](../.github/CODEOWNERS) approved it after its last push, and every review thread is resolved;
+- every commit is [signed](https://docs.github.com/en/authentication/managing-commit-signature-verification).
+
+Pull requests are merged with merge commits only, so every commit lands in history as it is. Pull requests from
+forks wait for a maintainer to approve their CI run.
+
+### AI agents
+
+Claude Code runs these hooks from [.claude/settings.json](../.claude/settings.json) on top of the checks above:
+
+| Hook             | Runs                      | Does                                                               |
+| ---------------- | ------------------------- | ------------------------------------------------------------------ |
+| `guard-git.sh`   | before each shell command | blocks bad branch names, work on `main`/`staging`, merges          |
+| `format-file.sh` | after each file edit      | runs Prettier and `eslint --fix` on the file, reports what is left |
+| `stop-verify.sh` | before the agent finishes | requires a green `pnpm verify` (`format` if only Markdown changed) |
+
+Agents are also denied force-pushes, `gh pr merge` and edits to `pnpm-lock.yaml`.

@@ -51,8 +51,8 @@ architecture doc `.claude/templates/architecture.md`, new API doc `.claude/templ
 
 - Work only on `<type>/<kebab-case>` branches (≤ 50 chars) from an up-to-date `staging`. `main` is release-only
   and belongs to the user.
-- Commits and PR titles: Conventional Commits, ≤ 100 chars, types from `docs/development.md`. PRs are merged with
-  merge commits, so every commit lands in history.
+- Commits and PR titles: Conventional Commits, ≤ 100 chars; all naming rules in `docs/development.md#naming`. PRs
+  are merged with merge commits, so every commit lands in history.
 - Before carrying out a plan that changes the public API or protocol, or adds a package or dependency, delegate it
   to `critic` and show its points with the plan; the skills above already do this at their own steps.
 - Hand-over: at most 6 lines (what changed, checks and coverage, review result, what is left for the user), then

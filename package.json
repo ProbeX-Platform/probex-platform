@@ -16,7 +16,8 @@
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "verify": "pnpm lint && pnpm format && pnpm typecheck && pnpm test:coverage",
-    "verify:fix": "pnpm lint:fix && pnpm format:fix"
+    "verify:fix": "pnpm lint:fix && pnpm format:fix",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "keywords": [],
   "author": "Artem Horovyi",

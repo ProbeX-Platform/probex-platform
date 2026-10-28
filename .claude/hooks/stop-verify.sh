@@ -24,7 +24,7 @@ key=$({
 [[ -f $cache && $(cat "$cache") == "$key" ]] && exit 0
 
 if grep -qvE '\.md$' <<<"$changed"; then script=verify; else script=format; fi
-if out=$(pnpm --silent "$script" 2>&1); then
+if out=$(pnpm "$script" 2>&1); then
   mkdir -p "$(dirname "$cache")" && echo "$key" >"$cache"
   exit 0
 fi
