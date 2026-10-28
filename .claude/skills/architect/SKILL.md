@@ -44,5 +44,5 @@ the user copies the template first.
      `debugger.start()` becomes `debugger.run()`), per `.claude/rules/docs.md`; a new package's file from
      `.claude/templates/api.md`.
    - What is still undecided is not written down: it becomes a follow-up.
-7. **Hand over and ship** per the Workflow section of `CLAUDE.md`. Then list the follow-up work and offer `/task`
-   for it.
+7. **Hand over and ship** per the Workflow section of `CLAUDE.md`. Then list the follow-up work and offer
+   `/task-design` for it.

@@ -1,32 +1,68 @@
 ---
-description: Discuss a piece of work and create one or more ready-to-implement cards in the tracker's Backlog.
-argument-hint: <topic>
+description: Implement a tracker card end to end and open a PR to staging.
+argument-hint: [card link]
 disable-model-invocation: true
-model: opus
+model: sonnet
 effort: high
 ---
 
-Topic: $ARGUMENTS
+Card: $ARGUMENTS
 
-Goal: cards that `/do-task` or another developer can implement without coming back with questions, each small
-enough to track progress card by card. This is a conversation, one step per reply. Do not implement anything.
+Board and lists: the Tracker section of `CLAUDE.md`. Card format: `.claude/templates/card.md`.
 
-1. **Understand.** Read the related code, docs and ADRs (use the Explore agent). Restate the topic in two sentences:
-   who has which problem and what changes for them.
-2. **Discuss.** Ask in rounds of at most 4 questions (AskUserQuestion, concrete options):
-   - who needs it and why now;
-   - expected behavior, including edge cases and what happens on failure;
-   - constraints: overhead in the host app, public API or protocol compatibility, security;
-   - what is explicitly out of scope.
-3. **Split.** One card is one PR: it ships on its own, keeps `pnpm verify` green and is size S or M. Work that is
-   size L or holds several independent deliverables is split, usually along packages or flows (for example
-   protocol types → SDK connector → SDK debugger). Propose the split as a list of titles with one line each and the
-   order they depend on; the user confirms or changes it. A topic that fits one card stays one card.
-4. **Draft and challenge.** For each card, propose acceptance criteria and point out what is missing or untestable.
-   Check that no acceptance line falls between two cards and none is in two. Repeat until the user confirms nothing
-   is missing.
-5. **Architecture check.** An open design question (for example "WebSocket or HTTP?") → stop and suggest
-   `/architect` first. The cards then link the resulting doc or ADR.
-6. **Create.** Show all cards filled from `.claude/templates/card.md`. Once the user confirms, create them in the
-   **Backlog** list of the tracker in `CLAUDE.md`, in dependency order with sequential positions, so each card can
-   link the cards it depends on. Print every link. Never put a card anywhere but Backlog.
+## 1. Pick
+
+- A link was given: take the card if it is in **Planned**, or in **In Progress** with your own
+  `Started by Claude · branch <name>` comment and that branch exists locally (resume it).
+- No link: take the top card of **Planned** without the Research label. None → stop.
+- Anything else (someone else's In Progress, In Review, Done, Backlog) → stop and say why. Never move or edit those.
+- The card's "Depends on" lists a card that is not in **Done** → stop and name it.
+- The card has the Research label → stop and suggest `/architect`; research ends in a decision, not a PR.
+- The card is not in the format of `.claude/templates/card.md` (a seed) → stop and suggest `/task-design <card link>`.
+
+## 2. Clarify
+
+Read the card, its comments, and the related code, docs and ADRs (Explore agent). List what blocks a confident
+implementation: missing acceptance criteria, unclear behavior or failure cases, conflicts with docs or ADRs.
+Ask them (AskUserQuestion). Post the answers as one card comment `Clarifications` (question → answer) before coding.
+An open design question → stop and suggest `/architect`.
+
+## 3. Start
+
+1. `git switch staging && git pull --ff-only`, then `pnpm verify`. Red → stop and report; never build on red.
+2. Create `<type>/<kebab-case>` from `staging`.
+3. Move the card to **In Progress** and comment `Started by Claude · branch <name>`.
+
+## 4. Plan
+
+- **S** — ≤ 2 files, behavior is clear: go.
+- **M** — several files, clear goal: a 3–6 line plan inline, then go.
+- **L** — public API, protocol, new package or dependency, or ambiguity: write the plan and wait for approval.
+
+## 5. Implement with tests
+
+Follow `.claude/rules/`. Every acceptance line becomes at least one test.
+
+## 6. Blast radius
+
+Delegate to `impact`. Write a test for every item under "Tests required" (gaps in 3+ files → delegate to
+`unit-tester` with the list). Update `docs/api/` when it says so. "ADR: needed" → ask the user whether the
+choice meets the bar in `.claude/rules/adr.md`; if yes, stop and suggest `/architect`.
+
+## 7. Verify and review
+
+`pnpm verify` must be green. Delegate to `reviewer` without a `model` override. Fix every
+blocker and major, then re-run `pnpm verify`.
+
+## 8. Hand over and ship
+
+Hand over per the Workflow section of `CLAUDE.md`. On the user's OK:
+
+1. Commit, `git push -u origin <branch>`.
+2. `gh pr create --base staging`: title = commit subject; body = card link, what changed, how it was tested.
+3. Print the PR link, move the card to **In Review** and comment the PR link. Never touch the card again.
+
+## Rework
+
+The user asks for changes on an open PR: switch to its branch, run steps 5–8, and on OK commit and push to the
+same branch. Do not move the card.
