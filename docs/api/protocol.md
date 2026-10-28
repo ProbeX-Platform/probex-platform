@@ -69,8 +69,9 @@ const canSend = (status: ConnectorStatus): boolean => status === "connected";
 const PROTOCOL_VERSION = 1;
 ```
 
-The protocol version this package describes. Every message carries it in `version`. Additions that old peers can
-ignore keep it; renaming, removing or retyping anything a peer reads bumps it.
+The protocol version this package describes. Every message carries it in `version`; the message types below are
+version 1 and fix `version` to `1`. Additions that old peers can ignore keep it; renaming, removing or retyping
+anything a peer reads bumps it.
 
 ```ts
 import { PROTOCOL_VERSION } from "@probex-platform/protocol";
@@ -97,7 +98,7 @@ const isHello = (message: Message): boolean => message.type === "hello";
 
 ```ts
 interface Hello {
-  version: typeof PROTOCOL_VERSION;
+  version: 1;
   type: "hello";
   instanceId: string;
   service?: string;
@@ -140,7 +141,7 @@ const hello: Hello = {
 
 ```ts
 interface Welcome {
-  version: typeof PROTOCOL_VERSION;
+  version: 1;
   type: "welcome";
 }
 ```
@@ -158,7 +159,7 @@ const welcome: Welcome = { version: PROTOCOL_VERSION, type: "welcome" };
 
 ```ts
 interface Batch {
-  version: typeof PROTOCOL_VERSION;
+  version: 1;
   type: "batch";
   messages: Message[];
 }
@@ -177,7 +178,7 @@ const toBatch = (messages: Message[]): Batch => ({ version: PROTOCOL_VERSION, ty
 
 ```ts
 interface Breakpoints {
-  version: typeof PROTOCOL_VERSION;
+  version: 1;
   type: "breakpoints";
   breakpoints: Breakpoint[];
 }
@@ -253,7 +254,7 @@ const deep: CaptureLimits = { maxDepth: 5, maxItems: 50 };
 
 ```ts
 interface BreakpointStatus {
-  version: typeof PROTOCOL_VERSION;
+  version: 1;
   type: "breakpointStatus";
   breakpointId: string;
   status: "pending" | "active" | "rateLimited" | "error";
@@ -285,7 +286,7 @@ const status: BreakpointStatus = {
 
 ```ts
 interface Snapshot {
-  version: typeof PROTOCOL_VERSION;
+  version: 1;
   type: "snapshot";
   breakpointId: string;
   time: number;
