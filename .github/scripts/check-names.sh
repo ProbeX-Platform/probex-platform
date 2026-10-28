@@ -85,6 +85,10 @@ branch_problems() {
 subject_problems() {
   local s=$1 head desc type scope
   ((${#s} > max_subject)) && echo "${#s} chars, the limit is $max_subject"
+  if [[ $s =~ ^(fixup|squash|amend)! ]]; then
+    echo "'${BASH_REMATCH[0]}' commit is not squashed yet: git rebase -i --autosquash <base>"
+    return
+  fi
   if [[ $s != *:* ]]; then
     echo "no ':' after '<type>' or '<type>(<scope>)'"
     return
