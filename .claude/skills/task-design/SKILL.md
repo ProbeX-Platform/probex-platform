@@ -1,12 +1,15 @@
 ---
 description: Discuss a piece of work and create one or more ready-to-implement cards in the tracker's Backlog.
-argument-hint: <topic>
+argument-hint: <topic | card link>
 disable-model-invocation: true
 model: opus
 effort: high
 ---
 
 Topic: $ARGUMENTS
+
+The topic is free text or a link to a rough card the user wrote (a seed); for a seed, read its description and
+comments as the topic.
 
 Goal: cards that `/task` or another developer can implement without coming back with questions, each small
 enough to track progress card by card. This is a conversation, one step per reply. Do not implement anything.
@@ -31,3 +34,5 @@ enough to track progress card by card. This is a conversation, one step per repl
    **Backlog** list of the tracker in `CLAUDE.md`, in dependency order with sequential positions, so each card can
    link the cards it depends on, with the labels from the template. Print every link. Never put a card anywhere but
    Backlog.
+7. **Seed.** A seed that stays one card is rewritten in place instead of created anew and keeps its list. A seed
+   split into several cards gets a comment linking them; the user archives it.

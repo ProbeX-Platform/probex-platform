@@ -42,12 +42,12 @@ architecture doc `.claude/templates/architecture.md`, new API doc `.claude/templ
 
 ## Workflow
 
-| Command                    | Does                                                                             |
-| -------------------------- | -------------------------------------------------------------------------------- |
-| `/architect <doc> [focus]` | draft or decided doc in `docs/architecture/` → decided design, `docs/api/`, ADRs |
-| `/task-design <topic>`     | discussion → one or more cards in Backlog                                        |
-| `/task [card link]`        | card → branch, code, tests, blast radius, review → PR to `staging`               |
-| `/code-style <request>`    | change a rule in the shared lint/format configs and apply it                     |
+| Command                             | Does                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------- |
+| `/architect <doc> [focus]`          | draft or decided doc in `docs/architecture/` → decided design, `docs/api/`, ADRs |
+| `/task-design <topic or card link>` | topic or rough card → discussion → one or more cards in Backlog                  |
+| `/task [card link]`                 | card → branch, code, tests, blast radius, review → PR to `staging`               |
+| `/code-style <request>`             | change a rule in the shared lint/format configs and apply it                     |
 
 - Work only on `<type>/<kebab-case>` branches (≤ 50 chars) from an up-to-date `staging`. `main` is release-only
   and belongs to the user.
