@@ -29,4 +29,4 @@ enough to track progress card by card. This is a conversation, one step per repl
    `/architect` first. The cards then link the resulting doc or ADR.
 6. **Create.** Show all cards filled from `.claude/templates/card.md`. Once the user confirms, create them in the
    **Backlog** list of the tracker in `CLAUDE.md`, in dependency order with sequential positions, so each card can
-   link the cards it depends on. Print every link. Never put a card anywhere but Backlog.
+   link the cards it depends on, with the labels from the template. Print every link. Never put a card anywhere but Backlog.
