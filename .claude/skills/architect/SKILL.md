@@ -34,7 +34,10 @@ the user copies the template first.
    `.claude/rules/adr.md`, say so: no ADR. For each choice that meets the bar, present 2–3 viable options: how it works (2–3 lines), what it costs (host-app overhead, protocol
    impact, complexity, operations), what it rules out later, how it fits the vision's principles. Recommend one
    with the reason. The user decides; iterate if they push back.
-6. **Record**, once the user confirms:
+6. **Critique.** Delegate to `critic` without a `model` override, with the file path, the requirements from step 4
+   and the choices from step 5. Show every blocker and major with your view on it; the user decides what changes,
+   and a changed choice goes back to step 5.
+7. **Record**, once the user confirms:
    - The input file holds only the decided design, per `.claude/rules/docs.md`: no ideas, alternatives or open
      questions left, template comment removed.
    - Other component docs updated where the design touches them, and every overview above a changed doc checked
@@ -44,5 +47,5 @@ the user copies the template first.
      `debugger.start()` becomes `debugger.run()`), per `.claude/rules/docs.md`; a new package's file from
      `.claude/templates/api.md`.
    - What is still undecided is not written down: it becomes a follow-up.
-7. **Hand over and ship** per the Workflow section of `CLAUDE.md`. Then list the follow-up work and offer
+8. **Hand over and ship** per the Workflow section of `CLAUDE.md`. Then list the follow-up work and offer
    `/task-design` for it.
