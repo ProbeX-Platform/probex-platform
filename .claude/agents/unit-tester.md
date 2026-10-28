@@ -1,6 +1,6 @@
 ---
 name: unit-tester
-description: Writes missing Vitest tests for given behaviors and makes them pass; use in /do-task when impact lists test gaps in 3+ files.
+description: Writes missing Vitest tests for given behaviors and makes them pass; use in /task when impact lists test gaps in 3+ files.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 effort: medium

@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Read-only senior review of the branch diff against staging, project rules and ADRs; use in /do-task before hand-over.
+description: Read-only senior review of the branch diff against staging, project rules and ADRs; use in /task before hand-over.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high

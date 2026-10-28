@@ -1,6 +1,6 @@
 ---
 name: impact
-description: Read-only blast radius of the current branch: affected behavior, required tests, docs and ADR impact; use in /do-task after implementing.
+description: Read-only blast radius of the current branch: affected behavior, required tests, docs and ADR impact; use in /task after implementing.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: medium

@@ -32,21 +32,21 @@ Run checks only through `package.json` scripts, never retyped tool commands, so 
 Trello board https://trello.com/b/hzrnwdVz/probex-platform; card format `.claude/templates/card.md`, new
 architecture doc `.claude/templates/architecture.md`, new API doc `.claude/templates/api.md`.
 
-| List        | Holds                  | Who moves cards into it                            |
-| ----------- | ---------------------- | -------------------------------------------------- |
-| Backlog     | new cards from `/task` | `/task`                                            |
-| Planned     | ready to be done       | user                                               |
-| In Progress | being done             | `/do-task` when it starts                          |
-| In Review   | PR open                | `/do-task` when the PR is open; then only the user |
-| Done        | merged                 | user                                               |
+| List        | Holds                         | Who moves cards into it                         |
+| ----------- | ----------------------------- | ----------------------------------------------- |
+| Backlog     | new cards from `/task-design` | `/task-design`                                  |
+| Planned     | ready to be done              | user                                            |
+| In Progress | being done                    | `/task` when it starts                          |
+| In Review   | PR open                       | `/task` when the PR is open; then only the user |
+| Done        | merged                        | user                                            |
 
 ## Workflow
 
 | Command                    | Does                                                                             |
 | -------------------------- | -------------------------------------------------------------------------------- |
 | `/architect <doc> [focus]` | draft or decided doc in `docs/architecture/` → decided design, `docs/api/`, ADRs |
-| `/task <topic>`            | discussion → one or more cards in Backlog                                        |
-| `/do-task [card link]`     | card → branch, code, tests, blast radius, review → PR to `staging`               |
+| `/task-design <topic>`     | discussion → one or more cards in Backlog                                        |
+| `/task [card link]`        | card → branch, code, tests, blast radius, review → PR to `staging`               |
 | `/code-style <request>`    | change a rule in the shared lint/format configs and apply it                     |
 
 - Work only on `<type>/<kebab-case>` branches (≤ 50 chars) from an up-to-date `staging`. `main` is release-only
