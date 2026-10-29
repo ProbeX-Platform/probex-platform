@@ -24,15 +24,17 @@
 - [Connector](connector.md) — `HubConnector`, the default transport: the `hello` → `welcome` handshake, queues,
   batching, the rate limit and reconnects. A custom [`Connector`](../../api/protocol.md#connector) can replace it;
   the debugger sees only that interface.
+- [Logger](logger.md) — the wrapper both write their problems through: the level filter, collapsing of repeats,
+  holding lines during a pause, and safe calls into the app's [`Logger`](../../api/sdk/logger.md#logger).
 
 Both follow the same rules for the host app: no method throws or blocks, every timer and socket is unref'd, memory
-is bounded, and problems go to the configured [`Logger`](../../api/sdk/connector.md#logger).
+is bounded, and problems go to the configured [`Logger`](../../api/sdk/logger.md#logger).
 
 ## Packages
 
 `@probex-platform/sdk` depends on `@probex-platform/protocol` and `ws` only. The parts live in
-`packages/sdk/src/debugger/` and `packages/sdk/src/connector/`; the connector imports no other SDK module, so it can
-move to its own package.
+`packages/sdk/src/debugger/`, `packages/sdk/src/connector/` and `packages/sdk/src/logger/`; the connector imports
+only the logger, which imports no SDK module, so both can move to their own package.
 
 The package is built twice, as ES modules to `dist/esm/` and as CommonJS to `dist/cjs/`, and its `exports` map
 picks one for `import` or `require()`; see [ADR 0013](../../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md). Both builds share one
@@ -56,4 +58,5 @@ debugger per process, so an app that loads both still has one `probex`. Source f
 - [0008. Use WebSocket for the hub connection](../../adr/0008-use-websocket-for-the-hub-connection.md)
 - [0013. Publish the packages as ES modules and CommonJS](../../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md)
 
-Decisions of one component: [debugger](debugger.md#decisions), [connector](connector.md#decisions).
+Decisions of one component: [debugger](debugger.md#decisions), [connector](connector.md#decisions),
+[logger](logger.md#decisions).

@@ -2,13 +2,13 @@
 
 Shared tooling configs for ProbeX and other TS/Node projects.
 
-| Export                                             | Tool       | Usage                                                                    |
-| -------------------------------------------------- | ---------- | ------------------------------------------------------------------------ |
-| `@probex-platform/configs/tsconfig/base.json`      | TypeScript | `"extends": "@probex-platform/configs/tsconfig/base.json"`               |
-| `@probex-platform/configs/tsconfig/workspace.json` | TypeScript | a monorepo package: `src/` → `dist/`, composite, `*.test.ts` not emitted |
-| `@probex-platform/configs/eslint`                  | ESLint     | `export default [...config, { /* overrides */ }]`                        |
-| `@probex-platform/configs/prettier`                | Prettier   | `export { default } from "@probex-platform/configs/prettier"`            |
-| `@probex-platform/configs/vitest`                  | Vitest     | `export default createVitestConfig()`, `mergeConfig` it for overrides    |
+| Export                                             | Tool       | Usage                                                                                      |
+| -------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------ |
+| `@probex-platform/configs/tsconfig/base.json`      | TypeScript | `"extends": "@probex-platform/configs/tsconfig/base.json"`                                 |
+| `@probex-platform/configs/tsconfig/workspace.json` | TypeScript | a monorepo package: `src/` → `dist/`, composite, `*.test.ts` and `*.test-d.ts` not emitted |
+| `@probex-platform/configs/eslint`                  | ESLint     | `export default [...config, { /* overrides */ }]`                                          |
+| `@probex-platform/configs/prettier`                | Prettier   | `export { default } from "@probex-platform/configs/prettier"`                              |
+| `@probex-platform/configs/vitest`                  | Vitest     | `export default createVitestConfig()`, `mergeConfig` it for overrides                      |
 
 ESLint plugins are bundled as dependencies. `eslint`, `prettier`, `typescript` and `vitest` are optional peer
 dependencies — install only the tools you use.

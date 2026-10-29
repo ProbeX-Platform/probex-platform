@@ -74,3 +74,5 @@ Changing the contract between peers: [changing the protocol](protocol.md#changin
 - [0011. Encode snapshot values as a nested tree](../adr/0011-encode-snapshot-values-as-a-nested-tree.md)
 - [0012. Redact secrets by name inside the SDK](../adr/0012-redact-secrets-by-name-inside-the-sdk.md)
 - [0013. Publish the packages as ES modules and CommonJS](../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md)
+- [0014. Pass SDK logs as a full message and a context](../adr/0014-pass-sdk-logs-as-a-full-message-and-a-context.md)
+- [0015. Filter SDK logs by level before the app's logger](../adr/0015-filter-sdk-logs-by-level-before-the-apps-logger.md)

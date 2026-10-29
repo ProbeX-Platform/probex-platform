@@ -9,8 +9,8 @@ limits, redacts secrets and sends them to the hub through a connector. How to us
 ## Boundaries
 
 - Owns:
-  - the lifecycle of [`probex`](../../api/sdk/debugger.md#probex): options, `run()`, `stop()` and the connector it
-    creates;
+  - the lifecycle of [`probex`](../../api/sdk/debugger.md#probex): options, `run()`, `stop()`, the connector it
+    creates and the [logger](logger.md) it shares with that connector;
   - the in-process inspector session and the V8 breakpoints in it;
   - matching repository paths and TypeScript lines to loaded scripts through source maps;
   - capturing snapshots and cutting values to [`CaptureLimits`](../../api/protocol.md#capturelimits);
@@ -19,13 +19,16 @@ limits, redacts secrets and sends them to the hub through a connector. How to us
 - Does not own:
   - moving messages, buffering and reconnects: the [connector](connector.md);
   - message types: the [protocol](../protocol.md);
-  - which breakpoints exist: the hub.
+  - which breakpoints exist: the hub;
+  - filtering, collapsing and writing log lines: the [logger](logger.md).
 - Constraints:
   - Never throws into, crashes or blocks the host app. Every handler is wrapped in try/catch; an unexpected error is
     logged and the debugger stops itself while the app keeps running.
   - Every pause ends in `Debugger.resume`, also after an error. If resuming fails, `Debugger.disable` resumes the
     thread and the debugger stops itself.
   - A pause lasts at most 10 ms, the app spends at most 20 ms per second paused, and a snapshot is at most 64 KiB.
+    Log lines written during a pause are held and written after it; the pause path builds a log message only when
+    its level is enabled.
   - Without breakpoints the inspector's `Debugger` domain is off, so V8 runs the app as if ProbeX were not there.
   - Runs no user code: getters are never called and nothing is evaluated.
   - A redacted value is never read from V8, so it is not in the snapshot, the logs or the SDK's memory. Only the
@@ -38,8 +41,8 @@ limits, redacts secrets and sends them to the hub through a connector. How to us
     breakpoints and dropped with them.
   - Reads source maps inline (`data:` URLs) or from `.map` files next to the scripts; bundles, where many sources
     map into one script, are not supported.
-  - Imports only `@probex-platform/protocol`, the connector module and Node built-ins; source maps are decoded by
-    its own VLQ decoder.
+  - Imports only `@probex-platform/protocol`, the connector and logger modules and Node built-ins; source maps are
+    decoded by its own VLQ decoder.
   - Never keeps the host process alive: every timer is unref'd.
 
 ## Interactions
@@ -67,7 +70,7 @@ limits, redacts secrets and sends them to the hub through a connector. How to us
 
 The parts live in `packages/sdk/src/debugger/`:
 
-- `Debugger` — the `probex` object. Resolves the options, creates the connector and the parts below, hands
+- `Debugger` — the `probex` object. Resolves the options, creates the logger, the connector and the parts below, hands
   `breakpoints` messages to `Breakpoints` and sends what they produce. It is not running, running or stopping.
 - `Breakpoints` — holds the latest list from the hub, the V8 breakpoint of each entry and its status, and handles
   every pause.
@@ -124,7 +127,8 @@ The parts live in `packages/sdk/src/debugger/`:
 
 ### Capturing a snapshot
 
-1. V8 reaches a breakpoint and pauses the thread; `Debugger.paused` reaches the session synchronously.
+1. V8 reaches a breakpoint and pauses the thread; `Debugger.paused` reaches the session synchronously. The
+   [logger holds](logger.md#holding-lines-during-a-pause) every line until the handler returns.
 2. A pause without one of our breakpoints in `hitBreakpoints` is resumed at once.
 3. The rate limiter checks each entry on the hit V8 breakpoint: an entry is allowed if it has a token (10 per
    second), the process has one (50 per second) and the pause budget (20 ms per second) is not spent. With no entry
@@ -167,7 +171,7 @@ The parts live in `packages/sdk/src/debugger/`:
    unsubscribes from the connector.
 2. It closes the connector it created, which sends buffered snapshots for up to `closeTimeoutMs`; a custom
    connector is left open.
-3. The debugger is not running; `run()` can start it again.
+3. It [flushes the logger](logger.md#flushing). The debugger is not running; `run()` can start it again.
 4. An unexpected error in any part logs an error and runs the same steps, so the app keeps running without the
    debugger.
 
