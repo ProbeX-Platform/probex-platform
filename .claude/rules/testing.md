@@ -1,6 +1,7 @@
 ---
 paths:
   - "**/*.test.ts"
+  - "**/*.test-d.ts"
 ---
 
 # Testing
@@ -8,25 +9,63 @@ paths:
 A test exists to fail when the behavior breaks. Coverage (≥ 80%, enforced by `pnpm test:coverage` and CI) is the
 floor, not the goal: a line that runs without an assertion about its result is not tested.
 
-- Test behavior through the public surface, not private helpers or call order.
-- Mock only at boundaries: transport, time, `node:inspector`. Never mock the module under test.
-- Name tests `it("does X when Y")`; one behavior per test; no logic (`if`, loops) inside a test.
-- Assert the outcome (returned value, emitted message, state), not that a function was called.
+## What to test
+
+- Behavior through the public surface, not private helpers or call order. (Testing BP 1.4)
 - Every acceptance criterion of the card maps to at least one test.
-- Cover the failure path: SDK code must prove it does not throw into or block the host app.
+- The failure path: SDK code proves it does not throw into or block the host app. (Node BP 2.8)
+- No test exists only to raise coverage or to restate what the compiler already checks. No assertion repeats the
+  arrange step (`expect(hello.type).toBe("hello")` right after writing it) or pins a value to satisfy a lint rule.
+- A line no meaningful test can reach is excluded in the root `vitest.config.ts` with a comment saying why, or named
+  in the PR hand-over. Never cover it with a hollow test.
 - Before finishing, ask of each test: would it fail if the code under test returned a wrong value? If not, fix it.
 
+## How
+
+- Name tests `it("does X when Y")`; one behavior per test; no logic (`if`, loops) inside a test. (Testing BP 1.1)
+- Arrange, act, assert, separated by blank lines; act and assert are usually one line each. (Testing BP 1.2)
+- Data lives in the test: realistic, with only the fields that affect the result; a small factory with overrides
+  when it repeats. No shared mutable fixtures. (Testing BP 1.6, 1.9, 2.7)
+- Mock only at boundaries: transport, time, `node:inspector`. Never mock the module under test. Fake timers, never
+  real waits. (Testing BP 1.5)
+- Assert the outcome (returned value, emitted message, state, log), not that a function was called.
+- Expect errors, do not catch them: `await expect(run()).rejects.toThrow(BreakpointError)`. (Testing BP 1.10)
+- Snapshots only inline and only a few lines long. (Testing BP 1.8)
+
+## Type tests
+
+- Only for public types whose shape is the contract (protocol, SDK public API): what a user can and cannot write.
+- They live in `<module>.test-d.ts` next to the source and use `expectTypeOf` and `assertType` only, never a
+  runtime `expect`. Vitest does not run them; `pnpm typecheck` compiles them and fails on a broken assertion.
+- A rejected shape: `// @ts-expect-error <reason>` directly above `assertType<T>(...)`, with the wrong field on the
+  first line of the call, where tsc reports it.
+
 ```ts
-// Bad
+// Bad: spies on internals; a type check padded with a runtime assertion
 it("works", () => {
   const spy = vi.spyOn(manager, "internalSet");
   manager.add(bp);
   expect(spy).toHaveBeenCalled();
 });
+it("accepts a welcome", () => {
+  const welcome: Welcome = { version: 1, type: "welcome" };
+  expect(welcome.type).toBe("welcome");
+});
 
-// Good
+// Good: index.test.ts
 it("returns an error result when the inspector session is closed", async () => {
   const manager = createManager(closedSession());
-  await expect(manager.add(bp)).resolves.toEqual({ ok: false, reason: "session-closed" });
+
+  const result = await manager.add(bp);
+
+  expect(result).toEqual({ ok: false, reason: "session-closed" });
+});
+
+// Good: index.test-d.ts
+it("rejects a breakpoint without a line", () => {
+  // @ts-expect-error line is required
+  assertType<Breakpoint>({ id: "bp-1", file: "src/orders/checkout.ts" });
 });
 ```
+
+Source: [JavaScript Testing Best Practices](https://github.com/goldbergyoni/javascript-testing-best-practices).

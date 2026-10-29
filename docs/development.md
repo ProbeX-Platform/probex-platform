@@ -53,11 +53,37 @@ the same scripts on every pull request: see [Checks](#checks).
 ## Testing
 
 - Tests sit next to the code as `*.test.ts`. Coverage of `packages/*/src` must stay ≥ 80% in lines, branches and
-  functions.
+  functions; a line no meaningful test can reach is excluded in `vitest.config.ts` with the reason, never covered by
+  a hollow test.
 - Test behavior through the public surface. Mock only at the boundaries: the WebSocket, time and `node:inspector`.
 - SDK code also tests its failure paths: it must prove it does not throw into or block the host app.
+- Public types whose shape is the contract get type tests in `*.test-d.ts` with `expectTypeOf` and `assertType`.
+  Vitest does not run them; `pnpm typecheck` compiles them and fails on a broken assertion.
 
 Full rules: [testing](../.claude/rules/testing.md).
+
+## Code quality
+
+ProbeX runs inside other people's apps and is read by the developers who embed it, so the code is held to three
+public guides. The rules distilled from them, with the parts that apply to an embedded Node.js library:
+
+| Guide                                                                                                  | Rules                                                                                          |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html)                      | [TypeScript](../.claude/rules/typescript.md), [code quality](../.claude/rules/code-quality.md) |
+| [Node.js Best Practices](https://github.com/goldbergyoni/nodebestpractices)                            | [code quality](../.claude/rules/code-quality.md), [SDK](../.claude/rules/sdk.md)               |
+| [JavaScript Testing Best Practices](https://github.com/goldbergyoni/javascript-testing-best-practices) | [testing](../.claude/rules/testing.md)                                                         |
+
+- **Structure.** One concept per module, a folder with one `index.ts` entry per component, decisions kept apart from
+  I/O. Functions by default; a class only for state with a lifecycle.
+- **Naming.** Google's identifier rules: acronyms as words (`instanceId`), no `I` or `_` prefixes, units in names
+  (`timeoutMs`).
+- **Efficiency.** Know the complexity of what you write; every cache, queue and buffer is bounded; the hot path is
+  O(1) or O(n).
+- **Where ProbeX differs from Google.** Arrow functions instead of function declarations, string-literal unions
+  instead of enums, explicit return types on exports, `undefined` rather than `null`. Prettier owns formatting.
+
+ESLint enforces every rule it can, including limits on file and function size, nesting, complexity and
+parameters: see the [configs preset](api/configs.md#probex-platformconfigseslint).
 
 ## Making a change
 
