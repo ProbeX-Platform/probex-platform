@@ -27,7 +27,7 @@ and `verbatimModuleSyntax`.
 ```
 
 `base.json` plus a composite build of one monorepo package: compiles `src/` to `dist/` with declarations and source
-maps, and does not emit `*.test.ts`. Paths are relative to the extending `tsconfig.json`.
+maps, and does not emit `*.test.ts` or `*.test-d.ts`. Paths are relative to the extending `tsconfig.json`.
 
 ### `@probex-platform/configs/eslint`
 
@@ -37,12 +37,25 @@ export default config;
 ```
 
 Flat config: typescript-eslint `strictTypeChecked` and `stylisticTypeChecked`, import order and cycles, and Vitest
-rules for `*.test.ts`. Lints `*.ts` files only.
+rules for `*.test.ts` and `*.test-d.ts`. Lints `*.ts` files only. On top of those presets:
+
+- **Size and shape:** at most 300 lines per file and 50 per function (tests exempt), nesting depth 3, cyclomatic
+  complexity 10, 3 parameters.
+- **Style:** arrow functions, named exports only (default exports allowed in `*.config.ts`), `===` except
+  `== null`, no `enum`, `for...in` or `#private`, `T[]` only for simple element types, object literals annotated
+  rather than asserted.
+- **Naming:** `camelCase`; `UPPER_CASE` also for constants; `PascalCase` for types and imports; no `I` prefix on
+  interfaces; quoted property names unchecked.
+- **Types:** explicit return types on exports, `readonly` for fields never reassigned, exhaustive `switch` on
+  unions and `default` on others.
 
 ```js
 import config from "@probex-platform/configs/eslint";
 
-export default [...config, { rules: { "max-lines-per-function": "off" } }];
+export default [
+  ...config,
+  { rules: { "max-lines-per-function": "off", "@typescript-eslint/max-params": ["error", { max: 4 }] } },
+];
 ```
 
 Type-aware rules find each file's `tsconfig.json` through the typescript-eslint project service. When editors run

@@ -89,7 +89,7 @@ export type Value =
   | { type: "object"; className: string; properties?: Variable[]; truncated?: boolean }
   | { type: "array"; length: number; items?: Value[] }
   | { type: "set"; size: number; items?: Value[] }
-  | { type: "map"; size: number; entries?: { key: Value; value: Value }[] }
+  | { type: "map"; size: number; entries?: Array<{ key: Value; value: Value }> }
   | { type: "accessor" }
   | { type: "circular" }
   | { type: "redacted" }
