@@ -13,22 +13,23 @@ config; developers create it themselves only to tune it. How to use it: [API](..
   - the session on each connection: the `hello` → `welcome` handshake and the protocol version check;
   - outgoing messages: serialization, the control queue and the data buffer, batching and the rate limit;
   - handing incoming messages and status changes to handlers;
-  - logging its own problems.
+  - deciding what it logs and at which level.
 - Does not own:
   - message types, `PROTOCOL_VERSION` and close codes: the [protocol](../protocol.md);
   - what is sent and what an incoming message means, including re-applying breakpoints after a reconnect: the
     [debugger](debugger.md);
-  - process signals and shutdown: the host app calls `close()`, directly or through the SDK.
+  - process signals and shutdown: the host app calls `close()`, directly or through the SDK;
+  - filtering, collapsing and writing log lines: the [logger](logger.md).
 - Constraints:
-  - Never throws into the host app and `close()` never rejects. Every problem is logged: failures at `error`,
-    problems the connector recovers from at `warn`. The first occurrence of a problem is logged in full; repeats
-    within 60 s are collapsed into one line with a count.
-  - Never blocks the event loop: `send()` costs one `JSON.stringify` of the message; all I/O is asynchronous.
+  - Never throws into the host app and `close()` never rejects. Every problem is logged through the
+    [logger](logger.md): failures at `error`, problems the connector recovers from at `warn`.
+  - Never blocks the event loop: `send()` costs one `JSON.stringify` of the message and builds a log message only
+    when its level is enabled; all I/O is asynchronous.
   - Never keeps the host process alive: the socket and every timer are unref'd.
   - Memory is bounded: the data buffer by `buffer.maxMessages` and `buffer.maxBytes`, the control queue by 100
     messages, incoming frames by 1 MiB.
-  - Imports only `@probex-platform/protocol`, `ws` and Node built-ins, never other SDK modules, so it can move to
-    its own package.
+  - Imports only `@probex-platform/protocol`, `ws`, the SDK [logger](logger.md) and Node built-ins. The logger
+    imports no SDK module, so both can move to their own package.
   - TLS certificates are always verified; custom CAs come from `NODE_EXTRA_CA_CERTS`. The token is never logged and
     never sent over `ws://` to a host other than loopback.
   - WebSocket compression is off: it costs CPU and memory in the host app.
@@ -45,7 +46,7 @@ config; developers create it themselves only to tune it. How to use it: [API](..
               onMessage, onStatus    │ rate limit · reconnect     │   welcome, messages, close   └─────┘
                                      └────────────────────────────┘
                                                    │
-                                                   │ warn, error
+                                                   │ log lines
                                                    ▼
                                               ┌────────┐
                                               │ Logger │
@@ -109,7 +110,7 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 
 1. `close()` stops reconnecting and pings, and sends queued messages for up to `closeTimeoutMs`.
 2. It drops what is left with a warning that says how many, closes the socket with code 1000, sets the status to
-   `closed` and resolves.
+   `closed`, [flushes the logger](logger.md#flushing) and resolves.
 3. No handler is called after `close()` resolves; later `connect()` and `send()` calls log a warning and do nothing.
 
 ## Decisions

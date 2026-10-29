@@ -63,14 +63,15 @@ process.once("SIGTERM", async () => {
 
 Every setting can come from an environment variable or from `probex.configure()` in code; code wins.
 
-| Variable         | What it sets                                              | Default             |
-| ---------------- | --------------------------------------------------------- | ------------------- |
-| `PROBEX_ENABLED` | `false` turns ProbeX off without a code change            | `true`              |
-| `PROBEX_HUB_URL` | the hub's `wss://` URL                                    | required            |
-| `PROBEX_TOKEN`   | the token the hub authenticates your app by               | none                |
-| `PROBEX_SERVICE` | the service name the hub targets breakpoints by           | none                |
-| `PROBEX_LABELS`  | extra targeting labels, such as `team=payments,region=eu` | no labels           |
-| `PROBEX_REDACT`  | extra names to redact, such as `iban,ssn`                 | built-in names only |
+| Variable           | What it sets                                              | Default             |
+| ------------------ | --------------------------------------------------------- | ------------------- |
+| `PROBEX_ENABLED`   | `false` turns ProbeX off without a code change            | `true`              |
+| `PROBEX_HUB_URL`   | the hub's `wss://` URL                                    | required            |
+| `PROBEX_TOKEN`     | the token the hub authenticates your app by               | none                |
+| `PROBEX_SERVICE`   | the service name the hub targets breakpoints by           | none                |
+| `PROBEX_LABELS`    | extra targeting labels, such as `team=payments,region=eu` | no labels           |
+| `PROBEX_REDACT`    | extra names to redact, such as `iban,ssn`                 | built-in names only |
+| `PROBEX_LOG_LEVEL` | the lowest level ProbeX logs: `debug` to `silent`         | `warn`              |
 
 Logger, buffers, batching, rate limits and the rest: [SDK API](docs/api/sdk/overview.md).
 

@@ -56,9 +56,9 @@ is logged to the [`logger`](#debuggeroptions). After a failed `run()` the debugg
   started is stopped, and the debugger does not start.
 - An unexpected error inside the debugger while it runs: it is logged and the debugger stops itself, as if
   `stop()` had been called.
-- An invalid option value or `PROBEX_ENABLED`: a warning is logged and the default is used. An empty or invalid
-  `redact` entry is skipped with a warning; the built-in names always apply.
-- The logger throws: the error is ignored; the debugger keeps working.
+- An invalid option value, `PROBEX_ENABLED` or `PROBEX_LOG_LEVEL`: a warning is logged and the default is used.
+  An empty or invalid `redact` entry is skipped with a warning; the built-in names always apply.
+- The logger throws or returns a rejected promise: the error is ignored; the debugger keeps working.
 
 ```ts
 import { probex } from "@probex-platform/sdk";
@@ -95,6 +95,7 @@ interface DebuggerOptions {
   labels?: Record<string, string>;
   redact?: string[];
   logger?: Logger;
+  logLevel?: LogLevel;
   hubConnector?: Pick<HubConnectorOptions, "buffer" | "batch" | "rateLimit" | "reconnect" | "closeTimeoutMs">;
   connector?: Connector;
 }
@@ -115,8 +116,10 @@ The options of [`probex.configure()`](#probex). Every field is optional.
   removed. A passed array replaces the env value. Default: built-in names only. Rules:
   [redacting secrets](../../architecture/sdk/debugger.md#redacting-secrets),
   [ADR 0012](../../adr/0012-redact-secrets-by-name-inside-the-sdk.md).
-- `logger` — [`Logger`](connector.md#logger), used by the debugger and by the default connector. Default: `console`
-  for `warn` and `error`, prefixed with `[probex]`.
+- `logger` — [`Logger`](logger.md#logger), used by the debugger and by the default connector. Default: `console`.
+- `logLevel` — [`LogLevel`](logger.md#loglevel), env `PROBEX_LOG_LEVEL`: the lowest level written, for the debugger
+  and the default connector. Default `warn`. A `configure()` call before `run()` applies `logger` and `logLevel`
+  first, so its own warnings use them.
 - `hubConnector` — tuning of the default connector: buffer, batch, rate limit, reconnect delays and close timeout,
   as in [`HubConnectorOptions`](connector.md#hubconnectoroptions).
 - `connector` — a custom [`Connector`](../protocol.md#connector) used instead of `HubConnector`. `run()` calls its
