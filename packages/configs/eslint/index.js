@@ -114,7 +114,7 @@ export default [
 
   {
     // Tools such as Vitest load their config through a default export
-    files: ["**/*.config.ts", "**/*.config.mts"],
+    files: ["**/*.config.ts"],
     rules: {
       "import-x/no-default-export": "off",
     },
