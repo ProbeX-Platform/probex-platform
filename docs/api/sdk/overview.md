@@ -6,10 +6,17 @@
 pnpm add @probex-platform/sdk
 ```
 
-- Node.js 22 or later. Works with `import` and `require()`. The main thread is debugged; worker threads are not.
-- TypeScript: ship source maps, inline or as `.map` files next to the JavaScript. Bundled output is not supported.
-- Do not attach another debugger to the process: while breakpoints are set, ProbeX resumes every pause it did not
-  cause. With `--inspect`, ProbeX does not start.
+Node.js 22 or later, with `import` or `require()`. For TypeScript, ship source maps; bundles are not supported.
+What else the app needs: [`probex`](debugger.md#probex).
+
+What your app can rely on:
+
+- There is one [`probex`](debugger.md#probex) per process, shared by every copy of the SDK.
+- No method throws; an internal error turns ProbeX off and the app keeps running. Capturing stops after 10 ms per
+  pause and 20 ms per second; a snapshot is at most 64 KiB.
+- ProbeX keeps the process alive only while `stop()` sends buffered snapshots, for up to 6 s by default:
+  [`HubConnector`](connector.md#hubconnector).
+- Its problems go to `console` at `warn` and above, or to your [`Logger`](logger.md#logger).
 
 ## Exports
 
@@ -18,8 +25,8 @@ pnpm add @probex-platform/sdk
   - [`Debugger`](debugger.md#debugger) — the type of `probex`.
   - [`DebuggerOptions`](debugger.md#debuggeroptions) — the options of `configure()`.
 - [Connector](connector.md):
-  - [`HubConnector`](connector.md#hubconnector) — the default transport to the hub; create it yourself only to tune
-    it.
+  - [`HubConnector`](connector.md#hubconnector) — the default transport to the hub. The SDK creates it and you tune
+    it through `hubConnector`; create one yourself only to use it without the debugger.
   - [`HubConnectorOptions`](connector.md#hubconnectoroptions) — its options.
 - [Logger](logger.md):
   - [`Logger`](logger.md#logger) — where the SDK writes its own problems; `console`, pino and winston fit.
@@ -31,8 +38,9 @@ Protocol types, such as [`Connector`](../protocol.md#connector), come from
 
 ## Usage
 
-Each option is resolved once, at `run()`: the value passed to `configure()`, then the environment variable, then
-the default.
+Each option is resolved once, at `probex.run()`: the value passed to `configure()`, then the environment variable,
+then the default. A `HubConnector` you create resolves its own in its constructor. With a custom `connector`, `url`,
+`token`, `service` and `labels` are ignored.
 
 | Variable           | Option     | Default                                              |
 | ------------------ | ---------- | ---------------------------------------------------- |
@@ -44,17 +52,5 @@ the default.
 | `PROBEX_REDACT`    | `redact`   | built-in names only; format `iban,ssn`               |
 | `PROBEX_LOG_LEVEL` | `logLevel` | `warn`; `debug`, `info`, `warn`, `error` or `silent` |
 
-Set them in the deployment, then start the debugger as early as possible and stop it on shutdown:
-
-```ts
-import { probex } from "@probex-platform/sdk"; // or: const { probex } = require("@probex-platform/sdk");
-
-probex.run();
-
-process.once("SIGTERM", async () => {
-  await probex.stop();
-  process.exit(0);
-});
-```
-
-Options and the rest of the lifecycle: [debugger API](debugger.md).
+Set them in the deployment, call `probex.run()` as early as possible, and `probex.stop()` in your app's shutdown:
+[debugger usage](debugger.md#usage).

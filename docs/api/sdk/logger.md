@@ -19,7 +19,8 @@ interface Logger {
 
 Where the SDK writes its own problems: pass it as [`logger`](debugger.md#debuggeroptions) to `probex.configure()`
 or to a [`HubConnector`](connector.md#hubconnector). `console`, pino and winston fit as they are. Default:
-`console`, printing the message only. Design: [logger architecture](../../architecture/sdk/logger.md).
+`console`, printing the message only; pass `console` yourself to print the context too. Design:
+[logger architecture](../../architecture/sdk/logger.md).
 
 **Parameters**
 
@@ -29,11 +30,13 @@ or to a [`HubConnector`](connector.md#hubconnector). `console`, pino and winston
   pino drops it, winston merges it. See
   [ADR 0014](../../adr/0014-pass-sdk-logs-as-a-full-message-and-a-context.md).
 
-Only lines at or above [`logLevel`](#loglevel) reach the logger. Repeats of a problem within 60 s arrive as one line
-with a count.
+Only lines at or above [`logLevel`](#loglevel) reach the logger. A problem repeated within 60 s is logged once in
+full, then as one summary line with `count`.
 
-**Errors** — methods are called synchronously and their return value is ignored. A method that throws or returns a
-rejected promise is ignored; the SDK keeps working.
+**Errors** — methods are called synchronously, as methods of your logger, and their return value is ignored.
+
+- A method throws or returns a rejected promise: the error is ignored and not logged; the SDK keeps working.
+- `logger` is not an object with the four methods: a warning goes to `console`, and `console` is used.
 
 ```ts
 import winston from "winston";

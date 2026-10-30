@@ -28,10 +28,9 @@ HTTP 401 or 403 before the connection opens.
 
 ## Consequences
 
-- Connecting an app to a hub takes two environment variables.
-- The connector refuses to send a token over `ws://` to a host other than loopback, never logs it and always
-  verifies TLS certificates.
-- `PROBEX_TOKEN` is public API.
-- A hub must store tokens hashed, compare them in constant time and accept several at once, so a token can be
-  rotated without downtime.
+- Authentication adds one environment variable, `PROBEX_TOKEN`, next to `PROBEX_HUB_URL`; it is public API.
+- The connector never logs the token, always verifies TLS certificates, follows no redirects, and refuses to send
+  the token over `ws://` to a host other than `localhost`, `127.0.0.0/8` or `[::1]`, matched by name without a DNS
+  lookup.
+- To rotate a token without downtime, a hub accepts the old and the new token at once.
 - The token proves the app to the hub; TLS proves the hub to the app.

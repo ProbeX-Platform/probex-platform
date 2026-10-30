@@ -8,34 +8,45 @@
 │ ┌────┐ Debugger.*, Runtime.* │ ┌──────────┐    send(message)    ┌──────────────┐ │ │  hello, messages (wss)   ┌─────┐
 │ │ V8 │◀──────────────────────┼─│ Debugger │────────────────────▶│ HubConnector │─┼─┼─────────────────────────▶│ Hub │
 │ │    │───────────────────────┼▶│          │◀────────────────────│              │◀┼─┼──────────────────────────│     │
-│ └────┘  scriptParsed, paused │ └──────────┘ onMessage, onStatus └──────────────┘ │ │  welcome, breakpoints    └─────┘
-│                              └───────────────────────────────────────────────────┘ │
+│ └────┘  scriptParsed, paused │ └────┬─────┘ onMessage, onStatus └──────┬───────┘ │ │  welcome, breakpoints    └─────┘
+│                              │      │ log lines   ┌────────┐ log lines │         │ │
+│                              │      └────────────▶│ Logger │◀──────────┘         │ │
+│                              │                    └───┬────┘                     │ │
+│                              └────────────────────────┼──────────────────────────┘ │
+│ ┌───────────────────────┐                             │                            │
+│ │ App logger or console │◀────────────────────────────┘                            │
+│ └───────────────────────┘ debug|info|warn|error(message, context)                  │
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ProbeX debugs a running Node.js app without stopping it. The [SDK](sdk/overview.md) runs inside the host app: its
 [debugger](sdk/debugger.md) sets breakpoints through the V8 inspector and captures snapshots of variables, and its
 [connector](sdk/connector.md), `HubConnector` by default, carries messages to and from the hub over one WebSocket.
-The hub decides which breakpoints exist and receives the snapshots. Every peer builds against the
-[protocol](protocol.md).
+Its [logger](sdk/logger.md) writes the SDK's own problems to the app's logger or `console`. The hub decides which
+breakpoints exist and receives the snapshots; it is not part of this repository yet, and any server that speaks the
+[protocol](protocol.md) can act as one. Every peer builds against the protocol.
 
 What the host app can rely on:
 
-- The SDK never throws into, crashes or blocks the app. A failure turns ProbeX off; the app keeps running.
-- Without breakpoints V8 runs the app as if ProbeX were not there. A pause lasts at most 10 ms, and at most 20 ms
-  per second in total.
-- Memory and traffic are bounded: buffers drop the oldest data, and outgoing bytes are rate-limited.
-- Values of variables named like secrets, such as `password` or `token`, are redacted inside the app; the hub cannot
-  turn this off.
+- The SDK never throws into or crashes the app. An internal error turns ProbeX off; a lost hub connection is
+  retried.
+- Without breakpoints V8 runs the app as if ProbeX were not there; with them, pauses are short and capped per
+  second.
+- Memory and traffic are bounded, and the process is kept alive only while `stop()` sends what is left.
+- Secrets are redacted by name inside the app; the hub cannot turn this off.
+
+The exact limits: [SDK API](../api/sdk/overview.md#installation).
 
 ## Packages
 
 - `@probex-platform/protocol` — messages, `PROTOCOL_VERSION` and the `Connector` interface; types and constants
   only. The SDK, custom connectors and hubs import it: [architecture](protocol.md), [API](../api/protocol.md).
-- `@probex-platform/sdk` — the debugger and `HubConnector`, run in the host app. Depends on the protocol and `ws`:
-  [architecture](sdk/overview.md), [API](../api/sdk/overview.md).
+- `@probex-platform/sdk` — the debugger, `HubConnector` and the logger, run in the host app. Depends on the protocol
+  and `ws`: [architecture](sdk/overview.md), [API](../api/sdk/overview.md).
 - `@probex-platform/configs` — shared TypeScript, ESLint, Prettier and Vitest presets; dev-time only, never in the
   host app: [architecture](configs.md), [API](../api/configs.md).
+
+`examples/node-basic` is a demo app to try the SDK by hand.
 
 The protocol and the SDK ship as ES modules and CommonJS, so apps load them with `import` or `require()`.
 
@@ -43,7 +54,8 @@ The protocol and the SDK ship as ES modules and CommonJS, so apps load them with
 
 One debugging session, end to end:
 
-1. [Starting](sdk/debugger.md#starting) — `probex.run()` resolves the options and creates the connector.
+1. [Starting](sdk/debugger.md#starting) — `probex.run()` resolves the options and creates the default connector,
+   unless one is passed.
 2. [Connecting](sdk/connector.md#connecting) — the connector opens the WebSocket and
    [opens a session](protocol.md#opening-a-session) with `hello` → `welcome`.
 3. [Applying breakpoints](sdk/debugger.md#applying-breakpoints) — the hub sends the full breakpoint set; the
@@ -55,7 +67,10 @@ One debugging session, end to end:
    and rate-limited.
 6. [Losing the connection](sdk/debugger.md#losing-the-connection) — breakpoints stay set; after the reconnect the
    hub sends the full set again.
-7. [Stopping](sdk/debugger.md#stopping) — `probex.stop()` removes the breakpoints and flushes the connector.
+7. [Stopping](sdk/debugger.md#stopping) — `probex.stop()` removes the breakpoints and closes the connector it
+   created, sending buffered snapshots.
+
+Throughout, every part [writes its problems](sdk/logger.md#writing-a-line) through the logger.
 
 Changing the contract between peers: [changing the protocol](protocol.md#changing-the-protocol).
 
@@ -63,7 +78,7 @@ Changing the contract between peers: [changing the protocol](protocol.md#changin
 
 - [0001. Keep the protocol in its own package](../adr/0001-keep-the-protocol-in-its-own-package.md)
 - [0002. Ship the default connector inside the SDK](../adr/0002-ship-the-default-connector-inside-the-sdk.md)
-- [0003. Configure the connector from options, then env](../adr/0003-configure-the-connector-from-options-then-env.md)
+- [0003. Configure the SDK from options, then env](../adr/0003-configure-the-sdk-from-options-then-env.md)
 - [0004. Use handler functions in the Connector interface](../adr/0004-use-handler-functions-in-the-connector-interface.md)
 - [0005. Batch and rate-limit messages in the connector](../adr/0005-batch-and-rate-limit-messages-in-the-connector.md)
 - [0006. Authenticate to the hub with a bearer token](../adr/0006-authenticate-to-the-hub-with-a-bearer-token.md)
@@ -76,3 +91,4 @@ Changing the contract between peers: [changing the protocol](protocol.md#changin
 - [0013. Publish the packages as ES modules and CommonJS](../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md)
 - [0014. Pass SDK logs as a full message and a context](../adr/0014-pass-sdk-logs-as-a-full-message-and-a-context.md)
 - [0015. Filter SDK logs by level before the app's logger](../adr/0015-filter-sdk-logs-by-level-before-the-apps-logger.md)
+- [0016. Use the hello's protocol version for the session](../adr/0016-use-the-hellos-protocol-version-for-the-session.md)

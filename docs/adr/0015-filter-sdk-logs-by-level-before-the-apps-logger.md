@@ -7,8 +7,9 @@ Accepted · 2026-10-29
 ## Context
 
 The SDK logs from its hottest paths: the pause handler, inside a 10 ms budget, and `send()`. Operators need to turn
-on debug lines in a running deployment without a code change, also when the app uses the default `console`. A
-logger passed by the app filters by its own level, but only after the SDK has built the line and called it.
+on debug lines in a deployment through an environment variable instead of a code change, also when the app uses
+the default `console`. A logger passed by the app filters by its own level, but only after the SDK has built the
+line and called it.
 
 ## Decision
 
@@ -18,12 +19,12 @@ a passed logger alike. The level comes from the option, then `PROBEX_LOG_LEVEL`,
 ## Alternatives
 
 - **Leave filtering to the app's logger** — every disabled line is still built and passed on the pause path, and
-  the default `console` could never show debug lines.
+  the default `console`, which has no level, would print every debug line.
 - **A level per component** — more options and environment variables for a need no user has shown.
 
 ## Consequences
 
 - A disabled line costs one comparison, and hot paths skip building it.
-- `PROBEX_LOG_LEVEL=debug` shows debug lines with any logger, without a deploy.
+- `PROBEX_LOG_LEVEL=debug` shows debug lines with any logger, without a code change.
 - A passed logger set to `debug` still receives only `warn` and `error` until `logLevel` is lowered too.
 - `logLevel` and `PROBEX_LOG_LEVEL` are public API.

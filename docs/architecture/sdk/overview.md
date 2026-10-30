@@ -8,14 +8,17 @@
 │ │ Breakpoints · SourceMaps   │────────────────────▶│ session · control queue  │─┼─────────────────────────▶│ Hub │
 │ │ RateLimiter · Capture      │◀────────────────────│ data buffer · batcher    │◀┼──────────────────────────│     │
 │ │ InspectorSession           │ onMessage, onStatus │ rate limit · reconnect   │ │  welcome, breakpoints    └─────┘
-│ └────────────────────────────┘                     └──────────────────────────┘ │
-│     │                       ▲                                                   │
-└─────┼───────────────────────┼───────────────────────────────────────────────────┘
-      │ Debugger.*, Runtime.* │ scriptParsed, paused
-      ▼                       │
-  ┌───────────────────────────┴─────┐
-  │ V8 (node:inspector)             │
-  └─────────────────────────────────┘
+│ └───┬─────────┬─────────────┬┘                     └────────────┬─────────────┘ │
+│     │         │             ▲                                   │               │
+│     │         │ log lines   │                     ┌────────┐    │ log lines     │
+│     │         └─────────────┼────────────────────▶│ Logger │◀───┘               │
+│     │                       │                     └───┬────┘                    │
+└─────┼───────────────────────┼─────────────────────────┼─────────────────────────┘
+      │ Debugger.*, Runtime.* │ scriptParsed, paused    │ debug|info|warn|error(message, context)
+      ▼                       │                         ▼
+  ┌───────────────────────────┴─────┐               ┌───────────────────────┐
+  │ V8 (node:inspector)             │               │ App logger or console │
+  └─────────────────────────────────┘               └───────────────────────┘
 ```
 
 - [Debugger](debugger.md) — the [`probex`](../../api/sdk/debugger.md#probex) object. Turns the hub's breakpoint
@@ -27,18 +30,20 @@
 - [Logger](logger.md) — the wrapper both write their problems through: the level filter, collapsing of repeats,
   holding lines during a pause, and safe calls into the app's [`Logger`](../../api/sdk/logger.md#logger).
 
-Both follow the same rules for the host app: no method throws or blocks, every timer and socket is unref'd, memory
-is bounded, and problems go to the configured [`Logger`](../../api/sdk/logger.md#logger).
+All three follow the same rules for the host app: no method throws, nothing waits on I/O, every timer and socket
+is unref'd except while the connector flushes on close, memory is bounded, and problems go to the configured
+[`Logger`](../../api/sdk/logger.md#logger). The default `console` writes synchronously; see [logger](logger.md).
 
 ## Packages
 
 `@probex-platform/sdk` depends on `@probex-platform/protocol` and `ws` only. The parts live in
-`packages/sdk/src/debugger/`, `packages/sdk/src/connector/` and `packages/sdk/src/logger/`; the connector imports
-only the logger, which imports no SDK module, so both can move to their own package.
+`packages/sdk/src/debugger/`, `packages/sdk/src/connector/` and `packages/sdk/src/logger/`. Inside the SDK the
+debugger imports the connector and the logger, the connector imports only the logger, and the logger imports no SDK
+module, so the connector and the logger can move out together.
 
-The package is built twice, as ES modules to `dist/esm/` and as CommonJS to `dist/cjs/`, and its `exports` map
-picks one for `import` or `require()`; see [ADR 0013](../../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md). Both builds share one
-debugger per process, so an app that loads both still has one `probex`. Source files have no top-level `await`.
+The package is built as ES modules and as CommonJS, see
+[ADR 0013](../../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md). Every copy, either build or another
+install, shares [one debugger per process](debugger.md#boundaries).
 
 ## Key flows
 
@@ -46,15 +51,18 @@ debugger per process, so an app that loads both still has one `probex`. Source f
 - [Connecting to the hub](connector.md#connecting)
 - [Applying breakpoints](debugger.md#applying-breakpoints)
 - [Capturing a snapshot](debugger.md#capturing-a-snapshot)
+- [Redacting secrets](debugger.md#redacting-secrets)
 - [Sending a message](connector.md#sending-a-message)
+- [Writing a log line](logger.md#writing-a-line) and
+  [holding lines during a pause](logger.md#holding-lines-during-a-pause)
 - [Losing the connection](debugger.md#losing-the-connection)
-- [Stopping the debugger](debugger.md#stopping)
+- [Stopping the debugger](debugger.md#stopping) and [closing the connector](connector.md#closing)
 
 ## Decisions
 
 - [0001. Keep the protocol in its own package](../../adr/0001-keep-the-protocol-in-its-own-package.md)
 - [0002. Ship the default connector inside the SDK](../../adr/0002-ship-the-default-connector-inside-the-sdk.md)
-- [0003. Configure the connector from options, then env](../../adr/0003-configure-the-connector-from-options-then-env.md)
+- [0003. Configure the SDK from options, then env](../../adr/0003-configure-the-sdk-from-options-then-env.md)
 - [0008. Use WebSocket for the hub connection](../../adr/0008-use-websocket-for-the-hub-connection.md)
 - [0013. Publish the packages as ES modules and CommonJS](../../adr/0013-publish-the-packages-as-es-modules-and-commonjs.md)
 

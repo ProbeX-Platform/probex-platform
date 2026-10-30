@@ -1,4 +1,4 @@
-# 0003. Configure the connector from options, then env
+# 0003. Configure the SDK from options, then env
 
 ## Status
 
@@ -6,15 +6,16 @@ Accepted · 2026-10-21
 
 ## Context
 
-In most apps the SDK creates the default connector itself, and the hub URL differs per deployment (local, staging,
-production) and is set by whoever runs the app, often without touching its code. The same connector is also
-created directly in code and in tests, sometimes twice in one process with different settings.
+Most apps start the SDK with `probex.run()` and let it create the default connector. The hub URL, token, service,
+labels, log level and whether ProbeX runs at all differ per deployment (local, staging, production) and are set by
+whoever runs the app, often without touching its code. The same settings are also passed in code and in tests, and
+a `HubConnector` can be created directly, sometimes twice in one process with different settings.
 
 ## Decision
 
-We resolve each `HubConnector` option once, in the constructor: the passed value, then its `PROBEX_*` environment
-variable, then the default. Only values that differ per deployment get an environment variable; today that is
-`PROBEX_HUB_URL`.
+We resolve each option once, from the value passed in code, then its `PROBEX_*` environment variable, then the
+default: `probex` options at `probex.run()`, `HubConnector` options in its constructor. Only values that differ per
+deployment get an environment variable; the list is in the [SDK API](../api/sdk/overview.md#usage).
 
 ## Alternatives
 
@@ -22,10 +23,12 @@ variable, then the default. Only values that differ per deployment get an enviro
   hub would need a code change wherever that code was not written.
 - **Environment only** — two connectors in one process could not differ, tests would have to change
   `process.env`, and code could not override what the environment says.
+- **Environment before options** — a deployment variable would silently override a value the code passes on
+  purpose, so a test or a second `HubConnector` could not use its own `url` while `PROBEX_HUB_URL` is set.
 
 ## Consequences
 
-- An app connects to a hub with no ProbeX code beyond starting the SDK.
+- An app connects to a hub with no ProbeX code beyond `probex.run()`.
 - Environment variable names are public API: they are documented in `docs/api/` and renaming one is a breaking
   change.
-- Changes to `process.env` after a connector is created do not affect it.
+- Changes to `process.env` after `probex.run()`, or after a `HubConnector` is created, do not affect them.

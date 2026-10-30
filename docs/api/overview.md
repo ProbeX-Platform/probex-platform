@@ -17,7 +17,9 @@ How the packages fit together: [architecture overview](../architecture/overview.
 - **Use another transport** — implement [`Connector`](protocol.md#connector) and pass it to the SDK as
   [`connector`](sdk/debugger.md#debuggeroptions).
 - **Write a hub** — answer [`hello`](protocol.md#hello) with [`welcome`](protocol.md#welcome), send
-  [`breakpoints`](protocol.md#breakpoints) and receive [`snapshot`](protocol.md#snapshot) messages.
+  [`breakpoints`](protocol.md#breakpoints), and receive [`batch`](protocol.md#batch), [`snapshot`](protocol.md#snapshot)
+  and [`breakpointStatus`](protocol.md#breakpointstatus) messages.
 
-No ProbeX export throws into your app: failures are logged and turn ProbeX off. Protocol changes are
+No ProbeX export throws into your app: problems are logged, an internal error turns ProbeX off and a lost hub
+connection is retried. Protocol changes are
 backward-compatible or bump [`PROTOCOL_VERSION`](protocol.md#protocol_version).
