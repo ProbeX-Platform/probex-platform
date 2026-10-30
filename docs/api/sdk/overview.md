@@ -34,15 +34,15 @@ Protocol types, such as [`Connector`](../protocol.md#connector), come from
 Each option is resolved once, at `run()`: the value passed to `configure()`, then the environment variable, then
 the default.
 
-| Variable           | Option     | Default                                              |
-| ------------------ | ---------- | ---------------------------------------------------- |
-| `PROBEX_ENABLED`   | `enabled`  | `true`                                               |
-| `PROBEX_HUB_URL`   | `url`      | none; required unless a `connector` is set           |
-| `PROBEX_TOKEN`     | `token`    | none                                                 |
-| `PROBEX_SERVICE`   | `service`  | none                                                 |
-| `PROBEX_LABELS`    | `labels`   | no labels; format `team=payments,region=eu`          |
-| `PROBEX_REDACT`    | `redact`   | built-in names only; format `iban,ssn`               |
-| `PROBEX_LOG_LEVEL` | `logLevel` | `warn`; `debug`, `info`, `warn`, `error` or `silent` |
+| Variable           | Option     | Default                                                      |
+| ------------------ | ---------- | ------------------------------------------------------------ |
+| `PROBEX_ENABLED`   | `enabled`  | `true`                                                       |
+| `PROBEX_HUB_URL`   | `url`      | none; required unless a `connector` is set                   |
+| `PROBEX_TOKEN`     | `token`    | none                                                         |
+| `PROBEX_SERVICE`   | `service`  | none                                                         |
+| `PROBEX_LABELS`    | `labels`   | no labels; format `team=payments,region=eu`                  |
+| `PROBEX_REDACT`    | `redact`   | built-in names only; format `iban,ssn`                       |
+| `PROBEX_LOG_LEVEL` | `logLevel` | `warn`; exactly `debug`, `info`, `warn`, `error` or `silent` |
 
 Set them in the deployment, then start the debugger as early as possible and stop it on shutdown:
 

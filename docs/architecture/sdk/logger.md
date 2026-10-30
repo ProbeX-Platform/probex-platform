@@ -66,21 +66,27 @@ Levels:
    `configure()` logs a warning to the current logger and changes nothing.
 3. `new HubConnector(options)` resolves them the same way in its constructor, unless the debugger handed it a
    logger.
-4. An invalid `logLevel` or `PROBEX_LOG_LEVEL` logs a warning and `warn` is used.
+4. An invalid `logLevel` or `PROBEX_LOG_LEVEL` logs a warning and `warn` is used. A `logger` without the four
+   methods logs a warning to `console`, and `console` is used. The warnings carry the component of the caller that
+   set the options: `debugger` for `configure()` and `run()`, `connector` for `new HubConnector()`. Before any
+   options are set, the warning about `PROBEX_LOG_LEVEL` carries the logger's owner and goes to `console`. Like
+   every line, these warnings are written only when the resolved level lets `warn` through.
+5. `PROBEX_LOG_LEVEL` takes the level names exactly; an empty value counts as unset. An invalid value is reported
+   once per logger, however often the options are set.
 
 ### Writing a line
 
 1. A call site passes the level, a fixed key naming the problem, a message and the context fields it has.
 2. A line below the level is dropped at once.
 3. A repeat inside an open collapse window is counted and dropped, see [Collapsing repeats](#collapsing-repeats).
-4. The message becomes `[probex] <component>: <message>`. Every `%` in text from outside the SDK, such as error
-   messages and URL paths, is doubled, so a logger that formats `%s` or `%o` neither swallows the context into the
-   message nor drops it.
+4. The message becomes `[probex] <component>: <message>`. For a passed logger, every `%` in it is doubled, so text
+   from outside the SDK, such as error messages and URL paths, cannot make a logger that formats `%s` or `%o`
+   swallow the context into the message or drop it.
 5. The context always has `component`. An error becomes `{ name, message, code, stack }`, because JSON output turns
    an `Error` into `{}`. All values are plain and serializable.
 6. While the thread is paused, the line is held, see [Holding lines during a pause](#holding-lines-during-a-pause).
 7. Otherwise the app logger's method for the level is called with the message and the context. The default
-   `console` prints the message only.
+   `console` prints the message only, without doubling `%`: given one argument, it formats nothing.
 
 ### Collapsing repeats
 

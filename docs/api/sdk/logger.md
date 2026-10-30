@@ -30,7 +30,9 @@ or to a [`HubConnector`](connector.md#hubconnector). `console`, pino and winston
   [ADR 0014](../../adr/0014-pass-sdk-logs-as-a-full-message-and-a-context.md).
 
 Only lines at or above [`logLevel`](#loglevel) reach the logger. Repeats of a problem within 60 s arrive as one line
-with a count.
+with a count. Every `%` in the message passed to your logger is doubled, so a logger that formats `%s` keeps the context out of the
+message. A logger that formats nothing prints it as `%%`: pino called as in [Usage](#usage), winston without
+`format.splat()`.
 
 **Errors** — methods are called synchronously and their return value is ignored. A method that throws or returns a
 rejected promise is ignored; the SDK keeps working.
@@ -69,7 +71,8 @@ type LogLevel = "debug" | "info" | "warn" | "error" | "silent";
 The lowest level the SDK writes; `silent` writes nothing. Set it as `logLevel` in
 [`probex.configure()`](debugger.md#debuggeroptions) or a [`HubConnector`](connector.md#hubconnectoroptions), or with
 `PROBEX_LOG_LEVEL`. Default `warn`. Lines below it are dropped inside the SDK, before your logger is called, so
-lower it too when your logger is set to `debug`. See
+lower it too when your logger is set to `debug`. Values are matched exactly, in lowercase; an empty
+`PROBEX_LOG_LEVEL` counts as unset, and an invalid value logs a warning and `warn` is used. See
 [ADR 0015](../../adr/0015-filter-sdk-logs-by-level-before-the-apps-logger.md).
 
 - `error` — ProbeX cannot do its job until something changes, such as a rejected token.
