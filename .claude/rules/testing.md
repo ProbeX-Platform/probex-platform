@@ -2,6 +2,7 @@
 paths:
   - "**/*.test.ts"
   - "**/*.test-d.ts"
+  - "packages/*/test/**"
 ---
 
 # Testing
@@ -31,6 +32,18 @@ floor, not the goal: a line that runs without an assertion about its result is n
 - Assert the outcome (returned value, emitted message, state, log), not that a function was called.
 - Expect errors, do not catch them: `await expect(run()).rejects.toThrow(BreakpointError)`. (Testing BP 1.10)
 - Snapshots only inline and only a few lines long. (Testing BP 1.8)
+
+## End-to-end tests
+
+- They prove what unit tests can only fake: a real process, environment, console, event loop and exit. Keep them to
+  what a real process adds; each one starts a process.
+- A package's own: `packages/<name>/test/e2e/<component>/`, with a fixture app started as a child process, a
+  harness that drives it, and one `<behavior>.test.ts` per behavior of the component, one `it` per scenario. They may
+  import the package's sources by relative path, since they live in it. The whole system: in `examples/`, through the
+  public API only.
+- A run ends when the process exits by itself; a deadline after the last request only kills one that never does, and
+  a run that fails earlier kills its process. No sleeps and no assertion on elapsed real time: order is shown by
+  markers the fixture writes to the same output as the code under test.
 
 ## Type tests
 
