@@ -30,8 +30,7 @@ the host app. It does not ship the app's own logs. How to use it: [API](../../ap
     `release()`.
   - Calls the app's logger synchronously, as a method: `logger[level](message, context)`, and does not retry; only a
     pause holds lines back. The default `console` writes to stdout and stderr, which can block the event loop when
-    the reader is slow; the default level and
-    collapsing keep that rare.
+    the reader is slow; the default level and collapsing keep that rare.
   - Imports only Node built-ins and no other SDK module, so it moves with the connector if the connector becomes
     its own package.
 
@@ -110,8 +109,7 @@ Levels:
 3. When the window ends with repeats, one line at the same level says `<first message> (repeated N times in S s)`,
    with the first line's context plus `count`. S is the window's age in whole seconds: 60 when it expires, less
    when the cap or a flush ends it early, more when a blocked event loop delays the timer. A window without repeats
-   ends silently.
-   The next occurrence is logged in full again.
+   ends silently. The next occurrence is logged in full again.
 4. At most 100 windows are open. Opening another ends the oldest early, with its summary line.
 
 ### Holding lines during a pause
