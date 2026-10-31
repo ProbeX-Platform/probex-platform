@@ -92,8 +92,8 @@ repeated within 60 s is logged once in full, then as one summary line with a cou
 
 - No `url`, not a `ws://` / `wss://` URL, or a `token` with `ws://` to a non-loopback host: `connect()` logs an
   error and the status stays `disconnected`.
-- An invalid number option, `logLevel`, `PROBEX_LOG_LEVEL` or `PROBEX_LABELS` entry: a warning is logged and the
-  default is used or the entry is skipped. `reconnect.minDelayMs` above `reconnect.maxDelayMs`: a warning, and both
+- An invalid number option, `logger`, `logLevel`, `PROBEX_LOG_LEVEL` or `PROBEX_LABELS` entry: a warning is logged
+  and the default is used or the entry is skipped. `reconnect.minDelayMs` above `reconnect.maxDelayMs`: a warning, and both
   defaults are used.
 - The hub is unreachable, the TLS handshake fails, the upgrade gets another HTTP status, the connection drops or
   the hub stops answering pings: the status becomes `disconnected`, a warning is logged and the connector

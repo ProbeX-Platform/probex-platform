@@ -11,4 +11,22 @@ export default [
       },
     },
   },
+  {
+    // The logger moves with the connector if it becomes its own package: docs/architecture/sdk/logger.md
+    files: ["packages/sdk/src/logger/**/*.ts"],
+    ignores: ["**/*.test.ts", "**/*.test-d.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: String.raw`^(?!node:|\./(?!.*\.\.))`,
+              message: "The logger imports only Node built-ins (node:*) and its own files (./*).",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
