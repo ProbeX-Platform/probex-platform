@@ -34,11 +34,11 @@ the host app. It does not ship the app's own logs. How to use it: [API](../../ap
 ## Interactions
 
 ```text
-┌───────────┐  log(level, key, message, context)  ┌──────────────────────────────┐ warn(message, context) ┌────────────┐
+┌───────────┐  log(level, message, fields)        ┌──────────────────────────────┐ warn(message, context) ┌────────────┐
 │ Debugger  │ ───────────────────────────────────▶│            Logger            │ ─────────────────────▶ │ App logger │
 └───────────┘  hold(), release()                  │ level filter · collapsing    │                        │ or console │
 ┌───────────┐ ───────────────────────────────────▶│ pause hold · safe call       │                        └────────────┘
-│ Connector │  log(level, key, message, context)  └──────────────────────────────┘
+│ Connector │  log(level, message, fields)        └──────────────────────────────┘
 └───────────┘
 ```
 
@@ -76,7 +76,7 @@ Levels:
 
 ### Writing a line
 
-1. A call site passes the level, a fixed key naming the problem, a message and the context fields it has.
+1. A call site passes the level, a message and the fields it has, among them a fixed `key` naming the problem.
 2. A line below the level is dropped at once.
 3. A repeat inside an open collapse window is counted and dropped, see [Collapsing repeats](#collapsing-repeats).
 4. The message becomes `[probex] <component>: <message>`. For a passed logger, every `%` in it is doubled, so text
@@ -90,11 +90,15 @@ Levels:
 
 ### Collapsing repeats
 
-1. A problem is identified by the call site's key, the `breakpointId` and the error's `code`, so a different
-   breakpoint or error code is logged in full.
-2. Its first occurrence is logged in full and opens a 60 s window. Repeats inside the window are only counted.
-3. When the window ends with repeats, one line at the same level says `(repeated N times in 60 s)`, with `count`
-   in the context. A window without repeats ends silently. The next occurrence is logged in full again.
+1. A problem is identified by the line's level, the call site's key, the `breakpointId` and the error's `code`,
+   so a different breakpoint or error code is logged in full, and an `error` is never hidden behind a `warn`.
+   A line without a `key` is never collapsed; the key is not part of the context.
+2. Its first occurrence is logged in full and opens a 60 s window, timed by the monotonic clock so that a
+   wall-clock step cannot stretch it. Repeats inside the window are only counted.
+3. When the window ends with repeats, one line at the same level says `(repeated N times in S s)`, with the first
+   line's context plus `count`. S is the window's age in whole seconds: 60 when it expires, less when the cap or a
+   flush ends it early, more when a blocked event loop delays the timer. A window without repeats ends silently.
+   The next occurrence is logged in full again.
 4. At most 100 windows are open. Opening another ends the oldest early, with its summary line.
 
 ### Holding lines during a pause

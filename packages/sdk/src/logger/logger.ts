@@ -1,5 +1,6 @@
 import { callLogger, isLogger, type Logger } from "./app-logger.js";
-import { toLogContext, type LineFields } from "./context.js";
+import { RepeatCollapser, type RepeatSummary } from "./collapse.js";
+import type { LineFields, LogContext } from "./context.js";
 import { DEFAULT_LOG_LEVEL, isLogLevel, rankOf, type LineLevel, type LogLevel } from "./level.js";
 
 const LEVEL_NAMES = "debug, info, warn, error or silent";
@@ -24,6 +25,8 @@ export interface LoggerDependencies {
   component: string;
   env?: Environment;
   console?: Logger;
+  /** A monotonic clock in milliseconds, for collapse windows. */
+  now?: () => number;
 }
 
 type LevelSource = "option" | "env";
@@ -58,13 +61,19 @@ export class SdkLogger {
   private target: Logger;
   private passesContext = false;
   private hasReportedInvalidEnv = false;
+  private readonly owner: string;
+  private readonly env: Environment;
+  private readonly defaultConsole: Logger;
+  private readonly collapser: RepeatCollapser;
 
-  constructor(
-    private readonly owner: string,
-    private readonly env: Environment,
-    private readonly defaultConsole: Logger,
-  ) {
+  constructor({ component, env, console: defaultConsole, now }: Required<LoggerDependencies>) {
+    this.owner = component;
+    this.env = env;
+    this.defaultConsole = defaultConsole;
     this.target = defaultConsole;
+    this.collapser = new RepeatCollapser((summary) => {
+      this.logSummary(summary);
+    }, now);
   }
 
   /** Resolves `logLevel` and `logger`; a warning about an invalid one carries `component`. */
@@ -94,18 +103,36 @@ export class SdkLogger {
       return;
     }
 
-    const text = `[probex] ${fields.component}: ${message}`;
+    const context = this.collapser.admit(level, message, fields);
+    if (context !== undefined) {
+      this.write(level, message, context);
+    }
+  }
+
+  /** Writes the summaries of open collapse windows and stops the timer; lines written later are still logged. */
+  flush(): void {
+    this.collapser.flush();
+  }
+
+  // The callers build `context` with toLogContext(), which never throws, so neither does this
+  private write(level: LineLevel, message: string, context: LogContext): void {
+    const text = `[probex] ${context.component}: ${message}`;
     if (this.passesContext) {
-      callLogger(this.target, level, [escapePercents(text), toLogContext(fields)]);
+      callLogger(this.target, level, [escapePercents(text), context]);
     } else {
       // The default console prints the message only, and with a single argument it prints `%%` as is
       callLogger(this.target, level, [text]);
     }
   }
 
-  /** Writes whatever the logger holds back; lines written later are still logged. */
-  flush(): void {
-    // Every line is written as it comes, so there is nothing to write; callers flush on stop() and close() already
+  private logSummary({ level, message, context, repeats, elapsedSeconds }: RepeatSummary): void {
+    // set() may have raised the level since the first line was written
+    if (this.enabled(level)) {
+      this.write(level, `${message} (repeated ${String(repeats)} times in ${String(elapsedSeconds)} s)`, {
+        ...context,
+        count: repeats,
+      });
+    }
   }
 
   private currentThreshold(): number {
@@ -136,4 +163,5 @@ export const createLogger = ({
   component,
   env = process.env,
   console: defaultConsole = console,
-}: LoggerDependencies): SdkLogger => new SdkLogger(component, env, defaultConsole);
+  now = () => performance.now(),
+}: LoggerDependencies): SdkLogger => new SdkLogger({ component, env, console: defaultConsole, now });

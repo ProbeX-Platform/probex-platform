@@ -9,6 +9,8 @@ export interface LogContext {
 /** What a call site knows about a line besides its message; `error` is anything that was thrown. */
 export interface LineFields {
   component: string;
+  /** Names the problem for collapsing repeats; a line without it is never collapsed. Not part of the context. */
+  key?: string;
   breakpointId?: string;
   error?: unknown;
 }
@@ -54,6 +56,9 @@ const isError = (value: unknown): value is Error => {
     return false;
   }
 };
+
+/** Returns the `code` of a thrown `Error` as a string, without throwing; `undefined` when it has none. */
+export const readErrorCode = (value: unknown): string | undefined => (isError(value) ? readCode(value) : undefined);
 
 const toErrorContext = (value: unknown): ErrorContext => {
   if (!isError(value)) {
