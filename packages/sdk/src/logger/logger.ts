@@ -2,6 +2,8 @@ import { callLogger, isLogger, type Logger } from "./app-logger.js";
 import { RepeatCollapser, type RepeatSummary } from "./collapse.js";
 import type { LineFields, LogContext } from "./context.js";
 import { DEFAULT_LOG_LEVEL, isLogLevel, rankOf, type LineLevel, type LogLevel } from "./level.js";
+import type { TakenLines } from "./line-queue.js";
+import { PauseHold } from "./pause-hold.js";
 
 const LEVEL_NAMES = "debug, info, warn, error or silent";
 const INVALID_LEVEL_WARNINGS: Readonly<Record<LevelSource, string>> = {
@@ -65,6 +67,7 @@ export class SdkLogger {
   private readonly env: Environment;
   private readonly defaultConsole: Logger;
   private readonly collapser: RepeatCollapser;
+  private readonly pauseHold: PauseHold;
 
   constructor({ component, env, console: defaultConsole, now }: Required<LoggerDependencies>) {
     this.owner = component;
@@ -74,6 +77,9 @@ export class SdkLogger {
     this.collapser = new RepeatCollapser((summary) => {
       this.logSummary(summary);
     }, now);
+    this.pauseHold = new PauseHold((taken) => {
+      this.writeTaken(taken);
+    });
   }
 
   /** Resolves `logLevel` and `logger`; a warning about an invalid one carries `component`. */
@@ -109,13 +115,51 @@ export class SdkLogger {
     }
   }
 
-  /** Writes the summaries of open collapse windows and stops the timer; lines written later are still logged. */
+  /**
+   * Makes every logger in the process queue its lines until `release()`, so the app's logger never runs while the
+   * thread is paused. A second call does nothing.
+   */
+  hold(): void {
+    this.pauseHold.hold();
+  }
+
+  /** Ends the hold; the queued lines are written in a `setImmediate`, after the thread resumes. */
+  release(): void {
+    this.pauseHold.release();
+  }
+
+  /**
+   * Writes the queued lines and the summaries of open collapse windows, and stops the timer; lines written later are
+   * still logged. While held, the queue stays for `release()`.
+   */
   flush(): void {
+    this.pauseHold.flush();
     this.collapser.flush();
   }
 
   // The callers build `context` with toLogContext(), which never throws, so neither does this
   private write(level: LineLevel, message: string, context: LogContext): void {
+    if (this.pauseHold.shouldQueue()) {
+      this.pauseHold.enqueue({ level, message, context });
+      return;
+    }
+
+    this.emit(level, message, context);
+  }
+
+  private writeTaken({ lines, dropped }: TakenLines): void {
+    for (const { level, message, context } of lines) {
+      this.emit(level, message, context);
+    }
+
+    if (dropped !== undefined && this.enabled("warn")) {
+      this.emit("warn", `log lines dropped while the thread was paused: ${String(dropped.count)}`, {
+        component: dropped.component,
+      });
+    }
+  }
+
+  private emit(level: LineLevel, message: string, context: LogContext): void {
     const text = `[probex] ${context.component}: ${message}`;
     if (this.passesContext) {
       callLogger(this.target, level, [escapePercents(text), context]);
