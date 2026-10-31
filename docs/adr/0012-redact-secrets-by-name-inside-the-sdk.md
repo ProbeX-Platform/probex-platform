@@ -13,9 +13,9 @@ without setup, and must not depend on a hub that may be third-party or custom.
 
 ## Decision
 
-We redact values inside the SDK, by variable and property name, with a built-in list of secret names that the host
-app can extend through `redact` or `PROBEX_REDACT` but not shrink. A redacted value is sent as `{ type: "redacted" }`
-and is never read from V8.
+We redact values inside the SDK by the name of each variable, property and string map key, with a built-in list of
+secret names that the host app extends, never shrinks, through the `redact` option and `PROBEX_REDACT`, which both
+apply. A redacted value is sent as `{ type: "redacted" }`, and its children are never read.
 
 ## Alternatives
 
@@ -31,8 +31,10 @@ and is never read from V8.
 ## Consequences
 
 - Common secrets never leave the app, with no setup.
+- A redacted primitive, such as a password string, still arrives from V8 in the same `Runtime.getProperties` reply
+  as its siblings; the SDK drops it there, so it never reaches the snapshot or the logs.
 - Matching by contained name hides some harmless values, such as `sessionCount`; the host app cannot unhide them.
-- A secret under a harmless name, or inside a string such as a URL, is captured as is.
+- A secret under a harmless name, in an array item, or inside a string such as a URL, is captured as is.
 - The protocol gains the `redacted` value type, an addition: older readers show it as unavailable, so
   `PROTOCOL_VERSION` stays 1.
 - Opt-in value patterns are possible later as a new option, without a protocol change.

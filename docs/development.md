@@ -52,9 +52,9 @@ the same scripts on every pull request: see [Checks](#checks).
 
 ## Testing
 
-- Tests sit next to the code as `*.test.ts`. Coverage of `packages/*/src` must stay ≥ 80% in lines, branches and
-  functions; a line no meaningful test can reach is excluded in `vitest.config.ts` with the reason, never covered by
-  a hollow test.
+- Tests sit next to the code as `*.test.ts`; the configs package keeps its tests in `packages/configs/test/`.
+  Coverage of `packages/*/src` must stay ≥ 80% in lines, branches and functions; a line no meaningful test can
+  reach is excluded in `vitest.config.ts` with the reason, never covered by a hollow test.
 - Test behavior through the public surface. Mock only at the boundaries: the WebSocket, time and `node:inspector`.
 - SDK code also tests its failure paths: it must prove it does not throw into or block the host app.
 - Public types whose shape is the contract get type tests in `*.test-d.ts` with `expectTypeOf` and `assertType`.
@@ -75,8 +75,8 @@ public guides. The rules distilled from them, with the parts that apply to an em
 
 - **Structure.** One concept per module, a folder with one `index.ts` entry per component, decisions kept apart from
   I/O. Functions by default; a class only for state with a lifecycle.
-- **Naming.** Google's identifier rules: acronyms as words (`instanceId`), no `I` or `_` prefixes, units in names
-  (`timeoutMs`).
+- **Naming.** Google's identifier rules: acronyms as words (`instanceId`), no `I` prefix, no `_` prefix except on
+  an unused parameter, units in names (`timeoutMs`).
 - **Efficiency.** Know the complexity of what you write; every cache, queue and buffer is bounded; the hot path is
   O(1) or O(n).
 - **Where ProbeX differs from Google.** Arrow functions instead of function declarations, string-literal unions

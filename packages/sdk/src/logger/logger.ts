@@ -53,10 +53,6 @@ const resolveLevel = (option: unknown, env: Environment): ResolvedLevel => {
   return isLogLevel(value) ? { level: value } : { level: DEFAULT_LOG_LEVEL, invalidSource: "env" };
 };
 
-// A format-aware logger given a second argument would read `%s` in outside text as a placeholder and swallow the
-// context into the message (ADR 0014)
-const escapePercents = (text: string): string => text.replaceAll("%", "%%");
-
 /** The SDK's own logger: filters by level, formats each line and calls the app's logger without ever throwing. */
 export class SdkLogger {
   private threshold: number | undefined;
@@ -162,9 +158,10 @@ export class SdkLogger {
   private emit(level: LineLevel, message: string, context: LogContext): void {
     const text = `[probex] ${context.component}: ${message}`;
     if (this.passesContext) {
-      callLogger(this.target, level, [escapePercents(text), context]);
+      // Outside text is passed as it is: a `%s` in it only moves the context into the message (ADR 0014)
+      callLogger(this.target, level, [text, context]);
     } else {
-      // The default console prints the message only, and with a single argument it prints `%%` as is
+      // The default console prints the message only, and with a single argument it formats nothing
       callLogger(this.target, level, [text]);
     }
   }

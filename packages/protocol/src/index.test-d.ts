@@ -24,13 +24,20 @@ class MemoryConnector implements Connector {
   readonly sent: Message[] = [];
   private readonly messageHandlers = new Set<Handler<Message>>();
   private readonly statusHandlers = new Set<Handler<ConnectorStatus>>();
+  private status: ConnectorStatus = "disconnected";
+  private closing: Promise<void> | undefined;
 
   connect(): void {
-    this.emit(this.statusHandlers, "connected");
+    if (this.status === "disconnected") {
+      this.report("connecting");
+      this.report("connected");
+    }
   }
 
   send(message: Message): void {
-    this.sent.push(message);
+    if (this.status !== "closed") {
+      this.sent.push(message);
+    }
   }
 
   onMessage(handler: Handler<Message>): () => void {
@@ -44,26 +51,41 @@ class MemoryConnector implements Connector {
   }
 
   receive(message: Message): void {
-    this.emit(this.messageHandlers, message);
+    queueMicrotask(() => {
+      emit(this.messageHandlers, message);
+    });
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await -- verbatim copy of the Usage example
-  async close(): Promise<void> {
-    this.emit(this.statusHandlers, "closed");
-    this.messageHandlers.clear();
-    this.statusHandlers.clear();
+  close(): Promise<void> {
+    this.closing ??= new Promise((resolve) => {
+      queueMicrotask(() => {
+        this.status = "closed";
+        emit(this.statusHandlers, "closed");
+        this.messageHandlers.clear();
+        this.statusHandlers.clear();
+        resolve();
+      });
+    });
+    return this.closing;
   }
 
-  private emit<T>(handlers: Set<Handler<T>>, value: T): void {
-    for (const handler of handlers) {
-      try {
-        handler(value);
-      } catch {
-        // a failing handler must not stop the others
-      }
-    }
+  private report(status: ConnectorStatus): void {
+    this.status = status;
+    queueMicrotask(() => {
+      emit(this.statusHandlers, status);
+    });
   }
 }
+
+const emit = <T>(handlers: Set<Handler<T>>, value: T): void => {
+  for (const handler of [...handlers]) {
+    try {
+      handler(value);
+    } catch {
+      // a failing handler must not stop the others
+    }
+  }
+};
 
 describe("constants", () => {
   it("types the protocol version as the literal 1", () => {

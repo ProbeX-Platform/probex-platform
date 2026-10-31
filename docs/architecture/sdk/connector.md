@@ -4,7 +4,8 @@
 
 `HubConnector` is the SDK's default [`Connector`](../../api/protocol.md#connector): it carries protocol messages
 between the [debugger](debugger.md) in the host app and the hub over one WebSocket. The SDK creates it from its own
-config; developers create it themselves only to tune it. How to use it: [API](../../api/sdk/connector.md).
+config; developers create it themselves only to use it without the debugger, such as in a tool or a test. How to use
+it: [API](../../api/sdk/connector.md).
 
 ## Boundaries
 
@@ -23,17 +24,22 @@ config; developers create it themselves only to tune it. How to use it: [API](..
 - Constraints:
   - Never throws into the host app and `close()` never rejects. Every problem is logged through the
     [logger](logger.md): failures at `error`, problems the connector recovers from at `warn`.
-  - Never blocks the event loop: `send()` costs one `JSON.stringify` of the message and builds a log message only
-    when its level is enabled; all I/O is asynchronous.
-  - Never keeps the host process alive: the socket and every timer are unref'd.
-  - Memory is bounded: the data buffer by `buffer.maxMessages` and `buffer.maxBytes`, the control queue by 100
-    messages, incoming frames by 1 MiB.
+  - Never blocks the event loop: `send()` only serializes the message once and queues it, building a log message
+    only when its level is enabled. Batches are built and written from a timer or `setImmediate`, never inside
+    `send()`; all I/O is asynchronous.
+  - Never keeps the host process alive: the socket and every timer are unref'd, except while `close()` flushes, see
+    [Closing](#closing). A DNS lookup in progress cannot be unref'd and may hold a process that is otherwise done
+    until the lookup ends.
+  - Memory is bounded: the data buffer by `buffer.maxMessages` and `buffer.maxBytes`, the control queue by 200
+    messages of at most 4 KiB each, incoming frames by 1 MiB.
   - Imports only `@probex-platform/protocol`, `ws`, the SDK [logger](logger.md) and Node built-ins. The logger
     imports no SDK module, so both can move to their own package.
-  - TLS certificates are always verified; custom CAs come from `NODE_EXTRA_CA_CERTS`. The token is never logged and
-    never sent over `ws://` to a host other than loopback.
+  - TLS certificates are always verified; custom CAs come from `NODE_EXTRA_CA_CERTS`. Redirects are not followed.
+  - The token is never logged and never sent over `ws://` to a host other than loopback: `localhost`, `127.0.0.0/8`
+    or `[::1]`, matched by name without a DNS lookup. URLs are logged as origin and path only, never with userinfo or
+    query; headers of the upgrade response are never logged.
   - WebSocket compression is off: it costs CPU and memory in the host app.
-  - Connects to the hub directly; HTTP(S) proxies (`HTTPS_PROXY`) are not supported yet.
+  - Connects to the hub directly; HTTP(S) proxies (`HTTPS_PROXY`) are not supported.
   - Delivery is at most once: a message lost with a dropped socket is not resent.
 
 ## Interactions
@@ -60,46 +66,62 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 
 ### Connecting
 
-1. `connect()` resolves the URL and returns. No URL, a URL that is not `ws://` or `wss://`, or a token with `ws://`
-   to a non-loopback host: an error is logged and the status stays `disconnected`.
-2. The status becomes `connecting`. The connector opens the WebSocket with `Authorization: Bearer <token>` when a
-   token is set, and unrefs the socket.
+1. `connect()` checks the URL resolved in the constructor and returns. No URL, a URL that is not `ws://` or
+   `wss://`, or a token with `ws://` to a non-loopback host: an error is logged and the status stays
+   `disconnected`.
+2. After `connect()` returns, the status becomes `connecting`. The connector opens the WebSocket with
+   `Authorization: Bearer <token>` when a token is set, and unrefs the socket.
 3. Once open, it sends [`hello`](../../api/protocol.md#hello) as the first frame: protocol version, service, labels,
    instance id, hostname, pid, SDK and Node versions.
 4. The hub replies [`welcome`](../../api/protocol.md#welcome). The status becomes `connected` and the queued
    messages start to flow.
 5. The hub sends the full breakpoint state; the debugger applies it. This happens after every connect, so nothing
    has to survive a disconnect.
-6. On failure the status becomes `disconnected` and the next attempt waits `reconnect.minDelayMs`, doubling with
-   jitter up to `reconnect.maxDelayMs`:
-   - unreachable hub, TLS error or no `welcome` within 10 s: a warning;
-   - HTTP 401 or 403 on the upgrade, or close code `incompatibleVersion` or `protocolError`: an error, and the next
-     attempt waits `reconnect.maxDelayMs` at once. The connector keeps trying, so it recovers when the token or the
-     hub is fixed.
+6. On failure, or when a live connection drops, the status becomes `disconnected` and the next attempt waits the
+   current delay. The delay starts at `reconnect.minDelayMs`, doubles after each failed attempt up to
+   `reconnect.maxDelayMs`, and goes back to `reconnect.minDelayMs` after a `welcome`. Each wait is a random value
+   between half and all of the current delay.
+   - unreachable hub, TLS error, an HTTP status other than 101, 401 or 403 on the upgrade, or no `welcome` within
+     10 s: a warning;
+   - HTTP 401 or 403 on the upgrade, close code `incompatibleVersion` or `protocolError`, or an incoming frame over
+     1 MiB: an error, and the delay jumps to `reconnect.maxDelayMs`. The connector keeps trying, so it recovers when
+     the token or the hub is fixed.
 
 ### Sending a message
 
 1. `send(message)` serializes the message once. If `JSON.stringify` throws, an error is logged and the message is
-   dropped.
-2. Data messages (snapshots, later logs) go to the data buffer. When it is full by `buffer.maxMessages` or
-   `buffer.maxBytes`, the oldest data messages are dropped and a warning is logged.
+   dropped. A `hello` is dropped with a warning: the connector sends its own.
+2. Data messages (snapshots) go to the data buffer. When it is full by `buffer.maxMessages` or `buffer.maxBytes`,
+   the oldest data messages are dropped and a warning is logged. A single data message larger than
+   `buffer.maxBytes` is dropped with a warning.
 3. All other messages are control messages (breakpoint status, errors) and go to the control queue, so a burst of
-   snapshots cannot hide a breakpoint's status from the hub. Data never pushes them out; when 100 control messages
-   are waiting, the oldest is dropped and an error is logged. A new message type is control unless the connector
-   lists it as data.
-4. While `connected`, the batcher takes control messages first, then data, until it reaches `batch.maxMessages` or
-   `batch.maxBytes`, or `batch.flushIntervalMs` passes. A single message larger than `batch.maxBytes` is sent on
-   its own.
-5. The batch waits until the token bucket of `rateLimit.bytesPerSecond` allows it and the socket has less than
-   `batch.maxBytes` unsent. One message goes as itself, several as a `batch` frame.
-6. Messages already handed to the socket when it drops are lost.
+   snapshots cannot hide a breakpoint's status from the hub. A queued `breakpointStatus` is replaced by a newer one
+   for the same `breakpointId`, so the queue holds at most one per breakpoint. Data never pushes control messages
+   out; when 200 are waiting, the oldest is dropped and a warning is logged. A control message over 4 KiB is dropped
+   with a warning. A new message type is control unless the connector lists it as data.
+4. While `connected`, the batcher runs `batch.flushIntervalMs` after the first queued message, or at once from
+   `setImmediate` when `batch.maxMessages` or `batch.maxBytes` are queued. It builds a batch only when the token
+   bucket and the socket allow it, so messages wait in the queue and the buffer until then and a newer control
+   message still goes first.
+5. A batch takes control messages first, then data, up to `batch.maxMessages` and `batch.maxBytes`; a single message
+   larger than `batch.maxBytes` goes on its own. It is written when the socket has less than `batch.maxBytes`
+   unsent. One message goes as itself, several as a `batch` frame.
+6. The token bucket holds up to one second of `rateLimit.bytesPerSecond`. A frame larger than that waits for a full
+   bucket and leaves it in debt, so a large snapshot is delayed, never stuck.
+7. Messages already handed to the socket when it drops are lost; queued ones wait for the next `welcome`.
 
 ### Receiving a message
 
-1. A frame larger than 1 MiB closes the connection with an error; the connector reconnects.
-2. A frame that is not valid JSON or has no `type` is logged as a warning and ignored.
-3. A message with an unknown `type` is logged at `debug` and ignored, so older SDKs keep working with newer hubs.
-4. Every other message goes to each `onMessage` handler. A handler that throws is logged; the others still run.
+1. A frame larger than 1 MiB closes the connection with code 1009 and an error; the connector reconnects.
+2. Before `welcome`, any other frame closes the socket with `protocolError` and counts as a failed attempt.
+   `welcome` is not passed to handlers; a later one is ignored at `debug`.
+3. A binary frame, a frame that is not valid JSON or has no `type`, or a type the SDK sends (`hello`, `batch`,
+   `breakpointStatus`, `snapshot`) is logged as a warning and ignored.
+4. A message with an unknown `type` is logged at `debug` and ignored, so older SDKs keep working with newer hubs.
+   The connector module holds the list of types the hub sends.
+5. Every other message goes to each `onMessage` handler, in the order they subscribed. Handlers are called from a
+   copy of the list, so one that unsubscribes or calls `close()` does not skip the others. A handler that throws is
+   logged; the others still run. Status changes reach `onStatus` handlers the same way.
 
 ### Detecting a dead connection
 
@@ -108,15 +130,20 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 
 ### Closing
 
-1. `close()` stops reconnecting and pings, and sends queued messages for up to `closeTimeoutMs`.
+1. `close()` stops reconnecting and pings. When `connected`, it refs the socket and a `closeTimeoutMs` timer, so
+   the process stays alive while it sends queued messages, in batches and within the rate limit, for up to
+   `closeTimeoutMs`. Otherwise the pending attempt or socket is cancelled at once and nothing is sent.
 2. It drops what is left with a warning that says how many, closes the socket with code 1000, sets the status to
    `closed`, [flushes the logger](logger.md#flushing) and resolves.
-3. No handler is called after `close()` resolves; later `connect()` and `send()` calls log a warning and do nothing.
+3. The socket is terminated if the hub has not closed it within 1 s, so `close()` resolves within
+   `closeTimeoutMs` + 1 s. A second call returns the same promise.
+4. No handler is called after `close()` resolves; later `connect()` and `send()` calls log a warning and do nothing,
+   and `onMessage()` and `onStatus()` return a function that does nothing.
 
 ## Decisions
 
 - [0002. Ship the default connector inside the SDK](../../adr/0002-ship-the-default-connector-inside-the-sdk.md)
-- [0003. Configure the connector from options, then env](../../adr/0003-configure-the-connector-from-options-then-env.md)
+- [0003. Configure the SDK from options, then env](../../adr/0003-configure-the-sdk-from-options-then-env.md)
 - [0004. Use handler functions in the Connector interface](../../adr/0004-use-handler-functions-in-the-connector-interface.md)
 - [0005. Batch and rate-limit messages in the connector](../../adr/0005-batch-and-rate-limit-messages-in-the-connector.md)
 - [0006. Authenticate to the hub with a bearer token](../../adr/0006-authenticate-to-the-hub-with-a-bearer-token.md)

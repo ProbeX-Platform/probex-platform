@@ -23,14 +23,22 @@ of its state, without changing code or redeploying.
 4. When that line runs, the SDK records the call stack and variables and resumes your code at once.
 5. The snapshot goes to the hub, where you read it.
 
+The hub is not part of this repository yet; any server that speaks the [protocol](docs/api/protocol.md) can act as
+one.
+
 What your app can rely on:
 
-- ProbeX never throws into, crashes or blocks your app. If something fails, ProbeX turns itself off.
-- Without breakpoints your app runs as if ProbeX were not there. A pause lasts at most 10 ms, and at most 20 ms per
+- ProbeX never throws into or crashes your app. An internal error turns ProbeX off; a lost hub connection is
+  retried.
+- Without breakpoints your app runs as if ProbeX were not there. Capturing stops after 10 ms per pause and 20 ms per
   second in total.
 - Memory and network use are bounded: old data is dropped and outgoing traffic is rate-limited.
-- Values of variables named like secrets, such as `password`, `token` or `apiKey`, are replaced with `redacted`
-  inside your app, so they never reach the hub. Add your own names with `PROBEX_REDACT`.
+- ProbeX never keeps your process alive, except while `stop()` sends buffered snapshots, up to 6 s by default.
+- Values of variables named like secrets, such as `password`, `token` or `apiKey`, are shown as `redacted` in the
+  snapshot and never leave your app. Add your own names with `PROBEX_REDACT`.
+- ProbeX reports its own problems to `console` at `warn` and above, or to your logger.
+
+Exact limits and rules: [SDK API](docs/api/sdk/overview.md).
 
 ## Quick start
 
@@ -46,32 +54,40 @@ PROBEX_TOKEN=<your token>
 PROBEX_SERVICE=checkout
 ```
 
-Start ProbeX as early as possible and stop it on shutdown:
+Start ProbeX as early as possible and stop it as a step of your app's own shutdown:
 
 ```ts
+import { createServer } from "node:http";
 import { probex } from "@probex-platform/sdk";
 
 probex.run();
 
-process.once("SIGTERM", async () => {
-  await probex.stop(); // sends buffered snapshots first
-  process.exit(0);
+const server = createServer((request, response) => response.end("ok")).listen(3000);
+
+process.once("SIGTERM", () => {
+  server.close(() => {
+    // sends buffered snapshots for up to 6 s, then the process exits by itself
+    void probex.stop();
+  });
 });
 ```
 
+Leave those 6 s in your orchestrator's grace period: [debugger usage](docs/api/sdk/debugger.md#usage).
+
 ## Configuration
 
-Every setting can come from an environment variable or from `probex.configure()` in code; code wins.
+Each setting below comes from its environment variable or from `probex.configure()` in code, read once at
+`probex.run()`; code wins.
 
-| Variable           | What it sets                                              | Default             |
-| ------------------ | --------------------------------------------------------- | ------------------- |
-| `PROBEX_ENABLED`   | `false` turns ProbeX off without a code change            | `true`              |
-| `PROBEX_HUB_URL`   | the hub's `wss://` URL                                    | required            |
-| `PROBEX_TOKEN`     | the token the hub authenticates your app by               | none                |
-| `PROBEX_SERVICE`   | the service name the hub targets breakpoints by           | none                |
-| `PROBEX_LABELS`    | extra targeting labels, such as `team=payments,region=eu` | no labels           |
-| `PROBEX_REDACT`    | extra names to redact, such as `iban,ssn`                 | built-in names only |
-| `PROBEX_LOG_LEVEL` | the lowest level ProbeX logs: `debug` to `silent`         | `warn`              |
+| Variable           | What it sets                                              | Default                                |
+| ------------------ | --------------------------------------------------------- | -------------------------------------- |
+| `PROBEX_ENABLED`   | `false` turns ProbeX off without a code change            | `true`                                 |
+| `PROBEX_HUB_URL`   | the hub's `wss://` URL, or `ws://` for local testing      | required unless you pass a `connector` |
+| `PROBEX_TOKEN`     | the token the hub authenticates your app by               | none                                   |
+| `PROBEX_SERVICE`   | the service name the hub targets breakpoints by           | none                                   |
+| `PROBEX_LABELS`    | extra targeting labels, such as `team=payments,region=eu` | no labels                              |
+| `PROBEX_REDACT`    | extra names to redact, such as `iban,ssn`                 | built-in names only                    |
+| `PROBEX_LOG_LEVEL` | the lowest level ProbeX logs: `debug` to `silent`         | `warn`                                 |
 
 Logger, buffers, batching, rate limits and the rest: [SDK API](docs/api/sdk/overview.md).
 
@@ -95,6 +111,7 @@ Logger, buffers, batching, rate limits and the rest: [SDK API](docs/api/sdk/over
 - [Architecture](docs/architecture/overview.md) — how ProbeX works inside.
 - [Architecture decisions](docs/adr/) — why it works this way.
 - [Vision](docs/vision.md) — goals and principles.
+- [Example](examples/node-basic/) — a minimal app to try ProbeX.
 
 ## Contributing
 

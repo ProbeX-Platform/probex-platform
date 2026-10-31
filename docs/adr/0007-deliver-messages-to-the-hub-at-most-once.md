@@ -12,9 +12,9 @@ hub, which can send it again at any time. Connections to the hub drop, and the h
 
 ## Decision
 
-We deliver SDK messages at most once and keep them only in memory: messages wait in bounded queues while the hub
-is unreachable, and messages lost with a dropped socket are not resent. After every connect, the hub sends the full
-breakpoint state.
+We deliver SDK messages at most once and keep them only in memory: messages already handed to the socket when it
+drops are lost and not resent; queued ones wait in bounded queues for the next `welcome`, and the oldest are
+dropped when a queue is full. Right after every `welcome`, the hub sends the full breakpoint list.
 
 ## Alternatives
 
@@ -26,6 +26,7 @@ breakpoint state.
 ## Consequences
 
 - The protocol needs no message ids or acks, and the hub no deduplication.
-- A disconnect can lose snapshots and breakpoint status messages; users see a gap, not wrong data.
-- The SDK never has to reconcile state: the hub's full breakpoint state after every connect replaces it.
-- Follow-up: the hub sends the full breakpoint state after `welcome`, and the debugger applies it as a replacement.
+- A disconnect can lose snapshots; users see a gap, not wrong data. Lost breakpoint statuses are sent again after
+  the reconnect, because the SDK answers the list after `welcome` with the status of every listed breakpoint.
+- Breakpoints stay set while the hub is unreachable; the list after the next `welcome` replaces them, so no change
+  has to survive a disconnect.

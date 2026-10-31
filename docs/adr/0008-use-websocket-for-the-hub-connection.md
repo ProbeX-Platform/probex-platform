@@ -16,8 +16,7 @@ detect dead connections and a limit on incoming frame size.
 ## Decision
 
 We use one WebSocket per SDK instance, opened outbound by the connector to the hub, carrying JSON protocol
-messages both ways. We implement it with the `ws` package and pass it a `createConnection` that unrefs the socket;
-this replaces the "only Node built-ins" part of [ADR 0002](0002-ship-the-default-connector-inside-the-sdk.md).
+messages in text frames both ways. We implement it with the `ws` package and unref its socket.
 
 ## Alternatives
 
@@ -36,7 +35,8 @@ this replaces the "only Node built-ins" part of [ADR 0002](0002-ship-the-default
 
 ## Consequences
 
-- An app needs no open port and no inbound access; it works wherever HTTPS goes out.
+- An app needs no open port and no inbound access; it works wherever a direct outbound HTTPS connection works.
+  Networks that allow outbound traffic only through an HTTP(S) proxy are not supported: `HTTPS_PROXY` is ignored.
 - A hub must accept WebSocket upgrades, and load balancers in front of it must allow them with an idle timeout
   longer than the 15 s ping interval.
 - One runtime dependency in the host app: `ws`, which has no dependencies of its own. Its versions are pinned to a

@@ -190,14 +190,14 @@ describe("summary", () => {
     expect(app.calls.map(([level]) => level)).toEqual(["error", "error"]);
   });
 
-  it("doubles every % in the summary like in any other line", () => {
+  it("passes % in the summary as is like in any other line", () => {
     const { app, logger } = setup();
     logger.log("warn", "bad path /a%s", { component: "connector", key: "path" });
     logger.log("warn", "bad path /a%s", { component: "connector", key: "path" });
 
     vi.advanceTimersByTime(60_000);
 
-    expect(app.calls[1]?.[1]).toBe("[probex] connector: bad path /a%%s (repeated 1 times in 60 s)");
+    expect(app.calls[1]?.[1]).toBe("[probex] connector: bad path /a%s (repeated 1 times in 60 s)");
   });
 
   it("writes the summary as the message only to the default console", () => {

@@ -7,9 +7,11 @@ Accepted · 2026-10-26
 ## Context
 
 Many Node.js apps that would embed the SDK still load packages with `require()`. ProbeX supports Node.js 22 or
-later, but `require()` of an ES module works only from 22.12, and it prints an `ExperimentalWarning` to the host
-app's stderr. The SDK must stay invisible in the host app, and it must work on every Node 22 release. Custom
-connectors and hubs import `@probex-platform/protocol`, so it has the same consumers.
+later, but `require()` of an ES module works only from 22.12, is still experimental in Node 22, and on some 22.x
+releases prints an `ExperimentalWarning` to the host app's stderr. TypeScript before 5.8 refuses to compile a
+CommonJS file that imports a package that ships only ES modules. The SDK must stay invisible in the host app, and
+it must work on every Node 22 release. Custom connectors and hubs import `@probex-platform/protocol`, so it has the
+same consumers.
 
 ## Decision
 
@@ -18,15 +20,20 @@ We build `@probex-platform/sdk` and `@probex-platform/protocol` twice, as ES mod
 
 ## Alternatives
 
-- **ES modules only, `engines` raised to `>=22.12`** — a single build, but every CommonJS app gets an
-  `ExperimentalWarning` from ProbeX, apps on Node 22.0–22.11 cannot load it, and the sources may never use
-  top-level `await`.
-- **CommonJS only** — works everywhere through `import` too, but ES module apps lose named-export checks and
-  tree-shaking, and the ecosystem is moving away from it.
+- **ES modules only, `engines` raised to `>=22.12`** — a single build, but apps on Node 22.0–22.11 cannot
+  `require()` it, some releases print an `ExperimentalWarning` in the host app, and CommonJS TypeScript projects
+  need TypeScript 5.8 or later to compile against it.
+- **CommonJS only** — one build that loads everywhere, but while Node 22.0–22.11 is supported the SDK could never
+  take a runtime dependency that ships only as an ES module, and the sources, tests and example, which are ES
+  modules, would ship in a format they never run in.
 
 ## Consequences
 
 - `import` and `require()` both work on every Node 22 release, without warnings.
-- An app can load both builds, for example through two dependencies. The SDK keeps one debugger per process across
-  copies, so this costs memory but not correctness.
-- Each package has two build outputs and two type entry points to keep correct; a test loads each one.
+- An app can load both builds, for example through two dependencies. The first copy stores the debugger on
+  `globalThis` under `Symbol.for("probex.debugger")` and every later copy exports it, so this costs memory but not
+  correctness.
+- The sources cannot use top-level `await`, because the CommonJS build cannot express it.
+- Each package has two build outputs and two type entry points to keep correct. Until the first release both
+  packages publish one ES module entry; the CommonJS build, the `import` and `require` conditions in `exports` and
+  a test that loads each build are follow-up work.
