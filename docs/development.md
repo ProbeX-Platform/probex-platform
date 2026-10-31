@@ -52,13 +52,17 @@ the same scripts on every pull request: see [Checks](#checks).
 
 ## Testing
 
-- Tests sit next to the code as `*.test.ts`; the configs package keeps its tests in `packages/configs/test/`.
+- Unit tests sit next to the code as `*.test.ts`; the configs package keeps its tests in `packages/configs/test/`,
+  and end-to-end tests have their own folder (below).
   Coverage of `packages/*/src` must stay ≥ 80% in lines, branches and functions; a line no meaningful test can
   reach is excluded in `vitest.config.ts` with the reason, never covered by a hollow test.
 - Test behavior through the public surface. Mock only at the boundaries: the WebSocket, time and `node:inspector`.
 - SDK code also tests its failure paths: it must prove it does not throw into or block the host app.
 - Public types whose shape is the contract get type tests in `*.test-d.ts` with `expectTypeOf` and `assertType`.
   Vitest does not run them; `pnpm typecheck` compiles them and fails on a broken assertion.
+- End-to-end tests run a component in a real Node process. A package keeps its own in
+  `packages/<name>/test/e2e/<component>/`: a small fixture app started as a child process, and one test file per
+  behavior of the component. Tests of the whole system, through the public API only, belong in `examples/`.
 
 Full rules: [testing](../.claude/rules/testing.md).
 
