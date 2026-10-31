@@ -25,9 +25,10 @@ the host app. It does not ship the app's own logs. How to use it: [API](../../ap
   - A line below the level costs one comparison. Code on the pause and send paths asks `enabled(level)` before it
     builds a message.
   - Memory is bounded: 100 collapse windows and 100 held lines.
-  - One timer, unref'd and running only while a collapse window is open.
-  - Calls the app's logger synchronously; it does not buffer or retry. The default `console` writes to stdout and
-    stderr, which are synchronous for files and terminals; the default level and collapsing keep that rare.
+  - One timer, unref'd and running only while a collapse window is open, and one `setImmediate` after a `release()`.
+  - Calls the app's logger synchronously and does not retry; only a pause holds lines back, up to 100. The default
+    `console` writes to stdout and stderr, which are synchronous for files and terminals; the default level and
+    collapsing keep that rare.
   - Imports only Node built-ins and no other SDK module, so it moves with the connector if the connector becomes
     its own package.
 
@@ -105,15 +106,26 @@ Levels:
 
 1. The debugger calls `hold()` when its `Debugger.paused` handler starts and `release()` in its `finally`, so the
    thread is never paused while the app's logger runs, also when the debugger stops itself during the pause.
-2. Lines written in between are queued. At 100, the oldest is dropped and counted.
-3. `release()` writes the queued lines with `setImmediate`, after the thread resumes, then one warning with the
-   number of dropped lines, if any.
+2. The hold is one flag for the whole process, kept in a record on `globalThis` under
+   `Symbol.for("probex.logger.hold")`: `hold()` on any logger makes every logger queue its lines, also one from
+   another copy or version of the SDK. A second `hold()` does nothing, one `release()` ends it, and `release()`
+   without `hold()` does nothing. A copy reads the record defensively and adds what an older one left out.
+3. Each logger keeps its own queue, of lines that passed the level filter and collapsing, summaries included. At 100,
+   the oldest is dropped and counted.
+4. `release()` writes nothing at once. In a `setImmediate`, after the thread resumes, every logger with a queue writes
+   it in order, then one warning with the number of dropped lines, if any. The warning carries the `component` of
+   the oldest dropped line and, like every line, is written only when the level lets `warn` through. Lines written
+   before the immediate runs join the queue, so the order holds. If `hold()` is called again first, nothing is
+   written and the lines wait for the next `release()`.
 
 ### Flushing
 
-1. `probex.stop()` and `HubConnector.close()` flush the logger before they resolve: queued lines and the summaries
-   of open windows are written, and the timer stops.
-2. Lines written later, such as warnings about calls after `close()`, are still logged.
+1. `probex.stop()` and `HubConnector.close()` flush the logger before they resolve: its queued lines and the dropped
+   lines warning, then the summaries of open windows, are written, and the timer stops. The pending `setImmediate`
+   of `release()` is cancelled unless another logger's queue still waits for it.
+2. While held, `flush()` writes no queued line and leaves the queue for `release()`; the summaries of the closed
+   windows join it.
+3. Lines written later, such as warnings about calls after `close()`, are still logged.
 
 ## Decisions
 
