@@ -333,13 +333,13 @@ describe("message", () => {
     expect(app.calls[0]?.[1]).toBe("[probex] connector: hub unreachable, retrying in 4 s");
   });
 
-  it("doubles every % for a passed logger", () => {
+  it("passes % as is to a passed logger", () => {
     const { app, logger } = setup();
     logger.set({ logger: app.logger }, "connector");
 
     logger.log("warn", "GET /orders%20new failed: %s %o", { component: "connector" });
 
-    expect(app.calls[0]?.[1]).toBe("[probex] connector: GET /orders%%20new failed: %%s %%o");
+    expect(app.calls[0]?.[1]).toBe("[probex] connector: GET /orders%20new failed: %s %o");
   });
 
   it("passes % as is to the default console, which prints a single argument unformatted", () => {
@@ -360,14 +360,14 @@ describe("message", () => {
     expect(nodeConsole.read()).toBe("[probex] connector: GET /orders%20new failed: %s\n");
   });
 
-  it("prints % as written and appends the context through a real passed console", () => {
+  it("lets a %s in the message take the context through a real passed console", () => {
     const nodeConsole = createNodeConsole();
     const logger = createLogger({ component: "connector", env: {}, console: nodeConsole.console });
     logger.set({ logger: nodeConsole.console }, "connector");
 
     logger.log("warn", "GET /orders%20new failed: %s", { component: "connector" });
 
-    expect(nodeConsole.read()).toBe("[probex] connector: GET /orders%20new failed: %s { component: 'connector' }\n");
+    expect(nodeConsole.read()).toBe("[probex] connector: GET /orders%20new failed: { component: 'connector' }\n");
   });
 
   it("calls a passed logger's method with this bound to it", () => {
