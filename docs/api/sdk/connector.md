@@ -28,7 +28,8 @@ Design: [connector architecture](../../architecture/sdk/connector.md).
 **Parameters**
 
 Each option is resolved once, in the constructor: the passed value, then its environment variable, then the
-default. An empty string counts as unset. Only values that differ per deployment have an environment variable. See
+default. An empty string counts as unset. A passed value that is invalid is ignored with a warning, and its
+environment variable is not read. Only values that differ per deployment have an environment variable. See
 [ADR 0003](../../adr/0003-configure-the-sdk-from-options-then-env.md). Every number option must be a finite
 integer of at least 1, and `reconnect.minDelayMs` must not exceed `reconnect.maxDelayMs`.
 
@@ -40,9 +41,12 @@ integer of at least 1, and `reconnect.minDelayMs` must not exceed `reconnect.max
   [ADR 0006](../../adr/0006-authenticate-to-the-hub-with-a-bearer-token.md).
 - `options.service` — `string`, env `PROBEX_SERVICE`. The service name the hub targets breakpoints by. No default.
 - `options.labels` — `Record<string, string>`, env `PROBEX_LABELS` as `key=value` pairs separated by commas, such
-  as `team=payments,region=eu`. Labels the hub can target breakpoints by. A passed object replaces the env value.
-  Entries are trimmed and split at the first `=`; an entry without `=` or with an empty key is skipped with a
-  warning, and a later key wins. Default: no labels.
+  as `team=payments,region=eu`. Labels the hub can target breakpoints by. A passed object, even `{}`, replaces the
+  env value; an entry whose value is not a string or whose key is empty is skipped with a warning, and one whose
+  value is `undefined` is skipped silently. Env entries are
+  trimmed and split at the first `=`, so `team=` keeps an empty value; an entry without `=` or with an empty key is
+  skipped with a warning, an empty entry such as after a trailing comma is skipped silently, and a later key wins.
+  Default: no labels.
 - `options.logger` — [`Logger`](logger.md#logger). Default: `console`.
 - `options.logLevel` — [`LogLevel`](logger.md#loglevel), env `PROBEX_LOG_LEVEL`. Default `warn`.
 - `options.buffer.maxMessages` — `number`, default `1000`. Data messages, such as snapshots, kept while they wait
@@ -92,9 +96,12 @@ repeated within 60 s is logged once in full, then as one summary line with a cou
 
 - No `url`, not a `ws://` / `wss://` URL, or a `token` with `ws://` to a non-loopback host: `connect()` logs an
   error and the status stays `disconnected`.
-- An invalid number option, `logger`, `logLevel`, `PROBEX_LOG_LEVEL` or `PROBEX_LABELS` entry: a warning is logged
-  and the default is used or the entry is skipped. `reconnect.minDelayMs` above `reconnect.maxDelayMs`: a warning, and both
-  defaults are used.
+- An invalid number option, `logger`, `logLevel`, `PROBEX_LOG_LEVEL`, `labels` entry or `PROBEX_LABELS` entry: a
+  warning is logged and the default is used or the entry is skipped. `reconnect.minDelayMs` above
+  `reconnect.maxDelayMs`: a warning, and both defaults are used.
+- `options`, an option group such as `buffer`, or `labels` that is not an object: a warning, and the defaults are
+  used. `url`, `token` or `service` that is not a string: a warning without the value, and the option stays unset.
+- An option whose getter throws: a warning, and the option counts as unset.
 - The hub is unreachable, the TLS handshake fails, the upgrade gets another HTTP status, the connection drops or
   the hub stops answering pings: the status becomes `disconnected`, a warning is logged and the connector
   reconnects.
