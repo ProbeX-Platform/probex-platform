@@ -22,7 +22,9 @@ class HubConnector implements Connector {
 The default connector: carries protocol messages between the SDK and the hub over one WebSocket. The SDK creates
 one from its own config, tuned through [`hubConnector`](debugger.md#debuggeroptions); create it yourself only to
 use it without the debugger, such as in a tool or a test. It implements [`Connector`](../protocol.md#connector), so
-a custom connector can replace it. It keeps the process alive only while `close()` sends what is left.
+a custom connector can replace it. It keeps the process alive only while `close()` sends what is left, for at most
+1 s while a socket closes, for at most 10 s while a TCP connect to the hub is in progress, and while a DNS lookup
+is in progress.
 Design: [connector architecture](../../architecture/sdk/connector.md).
 
 **Parameters**
@@ -33,7 +35,8 @@ environment variable is not read. Only values that differ per deployment have an
 [ADR 0003](../../adr/0003-configure-the-sdk-from-options-then-env.md). Every number option must be a finite
 integer of at least 1, and `reconnect.minDelayMs` must not exceed `reconnect.maxDelayMs`.
 
-- `options.url` — `string`, env `PROBEX_HUB_URL`. The hub's WebSocket URL, `ws://` or `wss://`. No default.
+- `options.url` — `string`, env `PROBEX_HUB_URL`. The hub's WebSocket URL, `ws://` or `wss://`; userinfo and a
+  fragment in it are not sent. No default.
   Certificates are always verified; add a custom CA with `NODE_EXTRA_CA_CERTS`. HTTP(S) proxies and redirects are
   not followed: the hub must be reachable directly.
 - `options.token` — `string`, env `PROBEX_TOKEN`. Sent as `Authorization: Bearer <token>` when connecting; never
@@ -94,19 +97,21 @@ Batching and rate limiting: see [ADR 0005](../../adr/0005-batch-and-rate-limit-m
 [`logger`](logger.md#logger): failures at `error`, problems the connector recovers from at `warn`. A problem
 repeated within 60 s is logged once in full, then as one summary line with a count.
 
-- No `url`, not a `ws://` / `wss://` URL, or a `token` with `ws://` to a non-loopback host: `connect()` logs an
-  error and the status stays `disconnected`.
+- No `url`, not a `ws://` / `wss://` URL, a `token` with `ws://` to a non-loopback host, or a `token` with
+  characters an HTTP header cannot carry: `connect()` logs an error, connects nowhere, and the status stays
+  `disconnected`.
 - An invalid number option, `logger`, `logLevel`, `PROBEX_LOG_LEVEL`, `labels` entry or `PROBEX_LABELS` entry: a
   warning is logged and the default is used or the entry is skipped. `reconnect.minDelayMs` above
   `reconnect.maxDelayMs`: a warning, and both defaults are used.
 - `options`, an option group such as `buffer`, or `labels` that is not an object: a warning, and the defaults are
   used. `url`, `token` or `service` that is not a string: a warning without the value, and the option stays unset.
 - An option whose getter throws: a warning, and the option counts as unset.
-- The hub is unreachable, the TLS handshake fails, the upgrade gets another HTTP status, the connection drops or
-  the hub stops answering pings: the status becomes `disconnected`, a warning is logged and the connector
-  reconnects.
-- The hub rejects the token (HTTP 401 or 403), speaks another protocol version, closes with `protocolError` or sends
-  a frame over 1 MiB: an error is logged and the connector keeps retrying every `reconnect.maxDelayMs`.
+- The hub is unreachable, the TLS handshake fails, the upgrade gets another HTTP status, the hub sends no
+  `welcome` within 10 s, the connection drops or the hub stops answering pings: the status becomes
+  `disconnected`, a warning is logged and the connector reconnects.
+- The hub rejects the token (HTTP 401 or 403), sends a frame before `welcome` or a `welcome` of another protocol
+  version, closes with `incompatibleVersion` or `protocolError`, or sends a frame over 1 MiB: an error is logged,
+  the reconnect delay jumps to `reconnect.maxDelayMs`, and the connector keeps retrying.
 - A message that cannot be serialized: an error is logged and the message is dropped.
 - A control message dropped because 200 are waiting or because it is over 4 KiB, or a data message larger than
   `buffer.maxBytes`: a warning is logged.

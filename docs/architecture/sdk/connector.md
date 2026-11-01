@@ -28,8 +28,9 @@ it: [API](../../api/sdk/connector.md).
     only when its level is enabled. Batches are built and written from a timer or `setImmediate`, never inside
     `send()`; all I/O is asynchronous.
   - Never keeps the host process alive: the socket and every timer are unref'd, except while `close()` flushes, see
-    [Closing](#closing). A DNS lookup in progress cannot be unref'd and may hold a process that is otherwise done
-    until the lookup ends.
+    [Closing](#closing). A DNS lookup or a TCP connect in progress cannot be unref'd and may hold a process that is
+    otherwise done until it ends, a connect for at most 10 s. A closing socket holds it for at most 1 s while the
+    hub answers the closing handshake.
   - Memory is bounded: the data buffer by `buffer.maxMessages` and `buffer.maxBytes`, the control queue by 200
     messages of at most 4 KiB each, incoming frames by 1 MiB.
   - Imports only `@probex-platform/protocol`, `ws`, the SDK [logger](logger.md) and Node built-ins. The logger
@@ -37,7 +38,8 @@ it: [API](../../api/sdk/connector.md).
   - TLS certificates are always verified; custom CAs come from `NODE_EXTRA_CA_CERTS`. Redirects are not followed.
   - The token is never logged and never sent over `ws://` to a host other than loopback: `localhost`, `127.0.0.0/8`
     or `[::1]`, matched by name without a DNS lookup. URLs are logged as origin and path only, never with userinfo or
-    query; headers of the upgrade response are never logged.
+    query; headers of the upgrade response and the hub's close reason are never logged. Userinfo in the URL is never
+    sent.
   - WebSocket compression is off: it costs CPU and memory in the host app.
   - Connects to the hub directly; HTTP(S) proxies (`HTTPS_PROXY`) are not supported.
   - Delivery is at most once: a message lost with a dropped socket is not resent.
@@ -67,8 +69,8 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 ### Connecting
 
 1. `connect()` checks the URL resolved in the constructor and returns. No URL, a URL that is not `ws://` or
-   `wss://`, or a token with `ws://` to a non-loopback host: an error is logged and the status stays
-   `disconnected`.
+   `wss://`, a token with `ws://` to a non-loopback host, or a token an HTTP header cannot carry: an error is logged,
+   nothing is opened, and the status stays `disconnected`.
 2. After `connect()` returns, the status becomes `connecting`. The connector opens the WebSocket with
    `Authorization: Bearer <token>` when a token is set, and unrefs the socket.
 3. Once open, it sends [`hello`](../../api/protocol.md#hello) as the first frame: protocol version, service, labels,
@@ -83,9 +85,9 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
    between half and all of the current delay.
    - unreachable hub, TLS error, an HTTP status other than 101, 401 or 403 on the upgrade, or no `welcome` within
      10 s: a warning;
-   - HTTP 401 or 403 on the upgrade, close code `incompatibleVersion` or `protocolError`, or an incoming frame over
-     1 MiB: an error, and the delay jumps to `reconnect.maxDelayMs`. The connector keeps trying, so it recovers when
-     the token or the hub is fixed.
+   - HTTP 401 or 403 on the upgrade, a frame before `welcome` or a `welcome` of another version, close code
+     `incompatibleVersion` or `protocolError`, or an incoming frame over 1 MiB: an error, and the delay jumps to
+     `reconnect.maxDelayMs`. The connector keeps trying, so it recovers when the token or the hub is fixed.
 
 ### Sending a message
 
@@ -113,7 +115,8 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 ### Receiving a message
 
 1. A frame larger than 1 MiB closes the connection with code 1009 and an error; the connector reconnects.
-2. Before `welcome`, any other frame closes the socket with `protocolError` and counts as a failed attempt.
+2. Before `welcome`, any other frame, or a `welcome` whose `version` is not `PROTOCOL_VERSION`, closes the socket
+   with `protocolError`, logs an error and counts as a failed attempt: the delay jumps to `reconnect.maxDelayMs`.
    `welcome` is not passed to handlers; a later one is ignored at `debug`.
 3. A binary frame, a frame that is not valid JSON or has no `type`, or a type the SDK sends (`hello`, `batch`,
    `breakpointStatus`, `snapshot`) is logged as a warning and ignored.

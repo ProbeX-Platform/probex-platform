@@ -32,7 +32,8 @@ What the host app can rely on:
   retried.
 - Without breakpoints V8 runs the app as if ProbeX were not there; with them, pauses are short and capped per
   second.
-- Memory and traffic are bounded, and the process is kept alive only while `stop()` sends what is left.
+- Memory and traffic are bounded, and the process is kept alive only while `stop()` sends what is left, and
+  briefly while the connector connects or closes a connection.
 - Secrets are redacted by name inside the app; the hub cannot turn this off.
 
 The exact limits: [SDK API](../api/sdk/overview.md#installation).
