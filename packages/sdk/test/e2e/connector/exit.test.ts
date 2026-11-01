@@ -12,6 +12,12 @@ const sendWrongFrameAndStopReading = async (hub: FakeHub): Promise<void> => {
   connection.socket.pause();
 };
 
+const welcomeNextConnection = async (hub: FakeHub): Promise<void> => {
+  const connection = await hub.nextConnection();
+  await connection.nextFrame();
+  connection.sendWelcome();
+};
+
 describe("connector process exit", { timeout: E2E_TEST_TIMEOUT_MS }, () => {
   const hubs = useFakeHubs();
 
@@ -32,6 +38,20 @@ describe("connector process exit", { timeout: E2E_TEST_TIMEOUT_MS }, () => {
     const run = await runApp({ hubUrl: hub.url });
 
     expect({ exitCode: run.exitCode, statuses: run.statuses }).toEqual({ exitCode: 0, statuses: ["connecting"] });
+  });
+
+  it("lets the app exit by itself while connected, with pings scheduled", async () => {
+    const hub = await hubs.start();
+    const welcomed = welcomeNextConnection(hub);
+
+    // Held until connected; after that only the open socket and the ping timer could hold the app
+    const run = await runApp({ hubUrl: hub.url, holdUntil: "connected" });
+    await welcomed;
+
+    expect({ exitCode: run.exitCode, statuses: run.statuses }).toEqual({
+      exitCode: 0,
+      statuses: ["connecting", "connected"],
+    });
   });
 
   it("lets the app exit by itself after a protocol error when the hub never answers the close", async () => {

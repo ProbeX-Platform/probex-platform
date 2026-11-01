@@ -1,7 +1,8 @@
 import type { Connector, ConnectorStatus, Message } from "@probex-platform/protocol";
 import { randomUUID } from "node:crypto";
 
-import { Attempt, type AttemptEvents, type AttemptFailure } from "./attempt.js";
+import type { AttemptFailure } from "./attempt-failure.js";
+import { Attempt, type AttemptEvents } from "./attempt.js";
 import { Backoff } from "./backoff.js";
 import { Batcher } from "./batcher.js";
 import { resolveConnectorConfig } from "./config.js";
@@ -57,6 +58,12 @@ export class HubConnector implements Connector {
     this.attemptEvents = {
       onWelcome: () => {
         this.onWelcome();
+      },
+      onMessage: (message) => {
+        this.deliver(message);
+      },
+      onIgnored: ({ level, reason }) => {
+        this.log(level, reason, `hub-ignored:${reason}`);
       },
       onEnd: (failure) => {
         this.onAttemptEnd(failure);
@@ -187,6 +194,15 @@ export class HubConnector implements Connector {
     if (!this.isClosing() && this.attempt !== undefined) {
       this.batcher.attach(this.attempt);
     }
+  }
+
+  private deliver(message: Message): void {
+    if (this.isClosing()) {
+      return;
+    }
+
+    // The list calls a snapshot, so a handler that unsubscribes or calls close() does not skip the others
+    this.messageHandlers.call(message);
   }
 
   private onAttemptEnd(failure: AttemptFailure): void {

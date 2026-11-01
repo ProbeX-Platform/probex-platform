@@ -59,6 +59,8 @@ export interface FakeHub {
 /** Options of a fake hub. */
 export interface FakeHubOptions {
   isSecure?: boolean;
+  /** Whether the hub answers pings by itself, as `ws` does by default. */
+  autoPong?: boolean;
 }
 
 // Hands out items in arrival order, to whoever asks first
@@ -200,9 +202,9 @@ const closeServer = (server: Server, wss: WebSocketServer, sockets: ReadonlySet<
     });
   });
 
-const startHub = async ({ isSecure = false }: FakeHubOptions): Promise<RunningHub> => {
+const startHub = async ({ isSecure = false, autoPong = true }: FakeHubOptions): Promise<RunningHub> => {
   const server = createServer(isSecure);
-  const wss = new WebSocketServer({ noServer: true });
+  const wss = new WebSocketServer({ noServer: true, autoPong });
   const sockets = new Set<Socket>();
   const requests: IncomingMessage[] = [];
   const requestArrivals = new Arrivals<IncomingMessage>();

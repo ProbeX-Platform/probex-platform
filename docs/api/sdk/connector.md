@@ -82,7 +82,10 @@ integer of at least 1, and `reconnect.minDelayMs` must not exceed `reconnect.max
   the data buffer is full, the oldest data messages are dropped and a warning is logged. Delivery is at most once:
   messages lost with a dropped connection are not resent. See
   [ADR 0007](../../adr/0007-deliver-messages-to-the-hub-at-most-once.md).
-- `onMessage(handler)` — calls `handler` with every message from the hub after `welcome`. Returns a function that
+- `onMessage(handler)` — calls `handler` with every message from the hub after `welcome`, such as
+  `breakpoints`. Handlers run in the order they subscribed. `welcome` itself and ignored frames (see Errors) never
+  reach a handler, and nothing does once `close()` is called. Only `version` and `type` are checked: the message
+  comes from the network, so a handler checks the other fields before it trusts them. Returns a function that
   removes it.
 - `onStatus(handler)` — calls `handler` with the new [`ConnectorStatus`](../protocol.md#connectorstatus) on every
   change. Returns a function that removes it.
@@ -114,12 +117,15 @@ repeated within 60 s is logged once in full, then as one summary line with a cou
 - The hub rejects the token (HTTP 401 or 403), sends a frame before `welcome` or a `welcome` of another protocol
   version, closes with `incompatibleVersion` or `protocolError`, or sends a frame over 1 MiB: an error is logged,
   the reconnect delay jumps to `reconnect.maxDelayMs`, and the connector keeps retrying.
+- The hub sends a message of another protocol version after `welcome`: the connector closes the session with
+  `protocolError`, logs an error, the reconnect delay jumps to `reconnect.maxDelayMs`, and it keeps retrying.
 - A message that cannot be serialized, because `JSON.stringify` throws or returns no string, such as for
   `undefined`: an error is logged and the message is dropped.
 - A control message dropped because 200 are waiting or because it is over 4 KiB, or a data message larger than
   `buffer.maxBytes`: a warning is logged.
-- A binary frame, a frame that is not valid JSON or has no `type`, or a message type only the SDK sends: a warning
-  is logged and it is ignored. A message with an unknown `type` is logged at `debug` and ignored.
+- A binary frame, a frame that is not valid JSON, has no numeric `version` or no string `type`, or a message type
+  only the SDK sends: a warning is logged and it is ignored. A message with an unknown `type` is logged at `debug`
+  and ignored.
 - A handler throws: the error is caught and logged; other handlers still run. The logger throws or rejects: the
   error is ignored.
 - `connect()` or `send()` after `close()`: a warning is logged and nothing happens. `onMessage()` or `onStatus()`

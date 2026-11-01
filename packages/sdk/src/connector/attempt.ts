@@ -1,25 +1,22 @@
-import { CLOSE_CODES, type Hello } from "@probex-platform/protocol";
+import { CLOSE_CODES, type Hello, type Message } from "@probex-platform/protocol";
 import { isIP, connect as netConnect, type Socket, type TcpNetConnectOpts } from "node:net";
 import { connect as tlsConnect, type ConnectionOptions } from "node:tls";
 import { WebSocket, type ClientOptions, type RawData } from "ws";
 
+import { describeClose, describeError, describeStatus, type AttemptFailure } from "./attempt-failure.js";
+import { Heartbeat } from "./heartbeat.js";
 import type { HubTarget } from "./hub-url.js";
+import { readHubFrame, type HubFrame, type IgnoredFrame } from "./inbound.js";
 import { checkFirstFrame } from "./welcome.js";
 import { readErrorCode } from "../logger/index.js";
-
-/** Why an attempt ended; `message` never holds the token, the URL's userinfo or query, or text from the hub. */
-export interface AttemptFailure {
-  level: "warn" | "error";
-  message: string;
-  /** Names the problem, so the logger collapses repeats. */
-  key: string;
-  /** The hub refused the session: the next wait is the longest one. */
-  isRejection: boolean;
-}
 
 /** What an attempt tells its connector. */
 export interface AttemptEvents {
   onWelcome(): void;
+  /** A message from the hub after `welcome`, of a type the hub sends. */
+  onMessage(message: Message): void;
+  /** A frame after `welcome` that is dropped; the connector logs it. */
+  onIgnored(frame: IgnoredFrame): void;
   /** Called at most once, and never after `stop()`. */
   onEnd(failure: AttemptFailure): void;
 }
@@ -81,49 +78,10 @@ const createSocketOptions = ({ target, token }: AttemptSettings): SocketOptions 
 const toText = (data: RawData, isBinary: boolean): string | undefined =>
   isBinary || !Buffer.isBuffer(data) ? undefined : data.toString("utf8");
 
-// Only the code: an error's message can quote the URL or a response header. The code is part of the key too, so a
-// changed cause, such as a rotated certificate during an outage, is logged in full instead of as a repeat.
-const describeError = (
-  level: AttemptFailure["level"],
-  message: string,
-  { key, error }: { key: string; error: unknown },
-): AttemptFailure => {
-  const code = readErrorCode(error) ?? "";
-  const text = code === "" ? message : `${message} (${code})`;
-  return { level, message: text, key: `${key}:${code}`, isRejection: false };
-};
-
-const describeClose = (code: number): AttemptFailure => {
-  if (code === CLOSE_CODES.incompatibleVersion) {
-    const message = "the hub does not support this SDK's protocol version (close code 4426)";
-    return { level: "error", message, key: "hub-incompatible-version", isRejection: true };
-  }
-
-  if (code === CLOSE_CODES.protocolError) {
-    const message = "the hub closed the session with a protocol error (close code 4400)";
-    return { level: "error", message, key: "hub-protocol-error", isRejection: true };
-  }
-
-  // The close reason is the hub's text and is never logged
-  const message = `the connection to the hub closed (close code ${String(code)})`;
-  return { level: "warn", message, key: `hub-closed:${String(code)}`, isRejection: false };
-};
-
-const describeStatus = (statusCode: number | undefined): AttemptFailure => {
-  const status = String(statusCode);
-  if (statusCode === 401 || statusCode === 403) {
-    const message = `the hub rejected the token (HTTP ${status}); check PROBEX_TOKEN`;
-    return { level: "error", message, key: "hub-unauthorized", isRejection: true };
-  }
-
-  // A redirect is not followed: its Location, like every response header, is never logged
-  const message = `the hub answered the WebSocket upgrade with HTTP ${status}`;
-  return { level: "warn", message, key: `hub-unexpected-response:${status}`, isRejection: false };
-};
-
-/** One connection to the hub: opens the socket, sends `hello` and waits for `welcome`. */
+/** One connection to the hub: opens the socket, sends `hello`, waits for `welcome`, then receives and pings. */
 export class Attempt {
   private readonly socket: WebSocket;
+  private readonly heartbeat: Heartbeat;
   private hasEnded = false;
   private isWelcomed = false;
   private welcomeTimer: NodeJS.Timeout | undefined;
@@ -134,6 +92,18 @@ export class Attempt {
     private readonly events: AttemptEvents,
   ) {
     this.socket = new WebSocket(settings.target.href, createSocketOptions(settings));
+    this.heartbeat = new Heartbeat({
+      ping: () => {
+        this.guard(() => {
+          this.socket.ping();
+        });
+      },
+      onSilence: () => {
+        this.guard(() => {
+          this.onSilence();
+        });
+      },
+    });
     // Each listener stays for the socket's whole life: ws can emit `error` a tick after terminate(), and an
     // `error` without a listener would crash the host app
     this.socket.on("error", (error) => {
@@ -156,6 +126,12 @@ export class Attempt {
         this.onMessage(data, isBinary);
       });
     });
+    // ws answers the hub's pings itself; either way a ping or pong shows the hub is alive
+    for (const event of ["ping", "pong"] as const) {
+      this.socket.on(event, () => {
+        this.heartbeat.onActivity();
+      });
+    }
     this.socket.on("close", (code) => {
       this.guard(() => {
         this.end(describeClose(code));
@@ -186,7 +162,7 @@ export class Attempt {
   /** Ends the attempt without reporting it: closes an open socket with 1000, aborts one still connecting. */
   stop(): Promise<void> {
     this.hasEnded = true;
-    clearTimeout(this.welcomeTimer);
+    this.clearTimers();
     if (this.socket.readyState === WebSocket.CLOSED) {
       return Promise.resolve();
     }
@@ -230,8 +206,13 @@ export class Attempt {
     }
 
     this.hasEnded = true;
-    clearTimeout(this.welcomeTimer);
+    this.clearTimers();
     this.events.onEnd(failure);
+  }
+
+  private clearTimers(): void {
+    clearTimeout(this.welcomeTimer);
+    this.heartbeat.stop();
   }
 
   private onError(error: Error): void {
@@ -275,25 +256,61 @@ export class Attempt {
       });
     }, WELCOME_TIMEOUT_MS);
     this.welcomeTimer.unref();
+    this.heartbeat.start();
   }
 
   private onMessage(data: RawData, isBinary: boolean): void {
-    // Messages after `welcome` are handled by a later change; until then they are ignored
-    if (this.hasEnded || this.isWelcomed) {
+    if (this.hasEnded) {
       return;
     }
 
-    const check = checkFirstFrame(toText(data, isBinary));
+    this.heartbeat.onActivity();
+    const text = toText(data, isBinary);
+    if (this.isWelcomed) {
+      this.onHubFrame(readHubFrame(text));
+      return;
+    }
+
+    const check = checkFirstFrame(text);
     if (!check.ok) {
-      // The reason is fixed text, so each kind of protocol error collapses on its own
-      this.end({ level: "error", message: check.reason, key: `hub-protocol-error:${check.reason}`, isRejection: true });
-      // A closing handshake, not terminate(), so the hub receives the code
-      this.socket.close(CLOSE_CODES.protocolError);
+      this.rejectSession(check.reason);
       return;
     }
 
     this.isWelcomed = true;
     clearTimeout(this.welcomeTimer);
     this.events.onWelcome();
+  }
+
+  private onHubFrame(frame: HubFrame): void {
+    switch (frame.kind) {
+      case "message":
+        this.events.onMessage(frame.message);
+        return;
+      case "ignored":
+        this.events.onIgnored(frame);
+        return;
+      case "rejected":
+        this.rejectSession(frame.reason);
+        return;
+    }
+  }
+
+  // A protocol error: the reason is fixed text, so each kind collapses on its own in the log
+  private rejectSession(reason: string): void {
+    this.end({ level: "error", message: reason, key: `hub-protocol-error:${reason}`, isRejection: true });
+    // A closing handshake, not terminate(), so the hub receives the code
+    this.socket.close(CLOSE_CODES.protocolError);
+  }
+
+  private onSilence(): void {
+    this.end({
+      level: "warn",
+      message: "the hub answered no ping within 10 s",
+      key: "hub-no-pong",
+      isRejection: false,
+    });
+    // No closing handshake: a hub that answers nothing would not answer that either
+    this.socket.terminate();
   }
 }

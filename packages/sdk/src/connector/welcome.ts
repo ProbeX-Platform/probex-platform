@@ -1,15 +1,9 @@
 import { PROTOCOL_VERSION } from "@probex-platform/protocol";
 
+import { parseJson } from "./inbound.js";
+
 /** The result of `checkFirstFrame()`; `reason` never quotes the frame, which the hub controls. */
 export type FirstFrameCheck = { ok: true } | { ok: false; reason: string };
-
-const parseJson = (text: string): unknown => {
-  try {
-    return JSON.parse(text);
-  } catch {
-    return undefined;
-  }
-};
 
 const describeVersion = (version: unknown): string =>
   typeof version === "number" ? `protocol version ${String(version)}` : "no valid protocol version";
