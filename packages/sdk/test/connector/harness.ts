@@ -75,10 +75,19 @@ export const useConnectorFakeTimers = (): void => {
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
 };
 
-/** Runs fake time up to the next timer, which must be the reconnect timer, and returns how long it waited. */
-export const advanceToReconnect = async (): Promise<number> => {
+/** Runs fake time until the disconnected connector of `harness` reconnects, and returns how long it waited. */
+export const advanceToReconnect = async (harness: Harness): Promise<number> => {
   const before = Date.now();
-  await vi.advanceTimersToNextTimerAsync();
+  const seen = harness.statuses.length;
+  // Timer by timer: ws's own timers, such as its 1 s closing-handshake timer, may still be due before the reconnect
+  while (!harness.statuses.slice(seen).includes("connecting")) {
+    if (vi.getTimerCount() === 0) {
+      throw new Error("no timer left, so the connector never reconnects");
+    }
+
+    await vi.advanceTimersToNextTimerAsync();
+  }
+
   return Date.now() - before;
 };
 

@@ -153,7 +153,7 @@ describe("HubConnector close()", () => {
     harness.connector.connect();
     await hub.nextRequest();
     await firstFailure;
-    await advanceToReconnect();
+    await advanceToReconnect(harness);
     const secondFailure = harness.nextStatus("disconnected");
     await hub.nextRequest();
     await secondFailure;

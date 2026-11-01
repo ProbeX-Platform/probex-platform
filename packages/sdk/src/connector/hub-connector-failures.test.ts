@@ -6,7 +6,6 @@ import { findClosedPort, useFakeHubs, type FakeHub, type HubConnection } from ".
 import {
   advanceToReconnect,
   createHarness,
-  settle,
   useConnectorFakeTimers,
   type Harness,
 } from "../../test/connector/harness.js";
@@ -48,7 +47,7 @@ describe("HubConnector failures before welcome", () => {
     connection.socket.send(frame);
     const closeCode = await connection.closed;
     await disconnected;
-    const waitMs = await advanceToReconnect();
+    const waitMs = await advanceToReconnect(harness);
 
     expect({ closeCode, errorCount: harness.messagesAt("error").length, waitMs }).toEqual({
       closeCode: CLOSE_CODES.protocolError,
@@ -85,7 +84,7 @@ describe("HubConnector failures before welcome", () => {
 
     connection.socket.close(code);
     await disconnected;
-    const waitMs = await advanceToReconnect();
+    const waitMs = await advanceToReconnect(harness);
 
     expect({ errors: harness.messagesAt("error"), waitMs }).toEqual({ errors: [error], waitMs: RECONNECT.maxDelayMs });
   });
@@ -97,10 +96,8 @@ describe("HubConnector failures before welcome", () => {
 
     connection.socket.send("x".repeat(1_048_577));
     await disconnected;
-    // Once the closing handshake is done, ws's own close timer is gone
     const closeCode = await connection.closed;
-    await settle();
-    const waitMs = await advanceToReconnect();
+    const waitMs = await advanceToReconnect(harness);
 
     expect({ closeCode, errors: harness.messagesAt("error"), waitMs }).toEqual({
       closeCode: 1009,
@@ -119,7 +116,7 @@ describe("HubConnector failures before welcome", () => {
 
     harness.connector.connect();
     await disconnected;
-    const waitMs = await advanceToReconnect();
+    const waitMs = await advanceToReconnect(harness);
 
     expect({ errors: harness.messagesAt("error"), waitMs }).toEqual({
       errors: ["the connector hit an unexpected error (ERR_TEST_SEND)"],
@@ -135,7 +132,7 @@ describe("HubConnector failures before welcome", () => {
 
     harness.connector.connect();
     await disconnected;
-    const waitMs = await advanceToReconnect();
+    const waitMs = await advanceToReconnect(harness);
 
     expect({ errors: harness.messagesAt("error"), waitMs }).toEqual({
       errors: [`the hub rejected the token (HTTP ${String(status)}); check PROBEX_TOKEN`],
@@ -152,7 +149,7 @@ describe("HubConnector failures before welcome", () => {
     await hub.nextRequest();
     await disconnected;
 
-    await advanceToReconnect();
+    await advanceToReconnect(harness);
     await hub.nextRequest();
 
     expect(hub.requests).toHaveLength(2);
@@ -165,7 +162,7 @@ describe("HubConnector failures before welcome", () => {
 
     await vi.advanceTimersByTimeAsync(10_000);
     await disconnected;
-    const waitMs = await advanceToReconnect();
+    const waitMs = await advanceToReconnect(harness);
 
     expect({ warnings: harness.messagesAt("warn"), waitMs }).toEqual({
       warnings: ["the hub sent no welcome within 10 s"],
@@ -181,7 +178,7 @@ describe("HubConnector failures before welcome", () => {
     harness.connector.connect();
     await disconnected;
     const connecting = harness.nextStatus("connecting");
-    await advanceToReconnect();
+    await advanceToReconnect(harness);
     await connecting;
 
     expect({ warnings: harness.messagesAt("warn"), statuses: harness.statuses.slice(0, 3) }).toEqual({
@@ -199,7 +196,7 @@ describe("HubConnector failures before welcome", () => {
     harness.connector.connect();
     await disconnected;
 
-    await advanceToReconnect();
+    await advanceToReconnect(harness);
     await hub.nextRequest();
 
     expect({ warnings: harness.messagesAt("warn"), elsewhere: elsewhere.requests.length }).toEqual({
@@ -217,7 +214,7 @@ describe("HubConnector failures before welcome", () => {
     harness.connector.connect();
     await hub.nextRequest();
     await disconnected;
-    await advanceToReconnect();
+    await advanceToReconnect(harness);
     await hub.nextRequest();
 
     expect({ warnings: harness.messagesAt("warn"), requests: hub.requests.length }).toEqual({
@@ -261,7 +258,7 @@ const failRepeatedly = async (harness: Harness, hub: FakeHub, count: number): Pr
     const disconnected = harness.nextStatus("disconnected");
     await hub.nextRequest();
     await disconnected;
-    waits.push(await advanceToReconnect());
+    waits.push(await advanceToReconnect(harness));
   }
 
   return waits;
@@ -298,7 +295,7 @@ describe("HubConnector failures after welcome", () => {
     connection.socket.terminate();
     await disconnected;
     const statuses = harness.statuses.slice(-3);
-    const waitMs = await advanceToReconnect();
+    const waitMs = await advanceToReconnect(harness);
 
     expect({ warning: harness.messagesAt("warn").at(-1), waitMs, statuses }).toEqual({
       warning: "the connection to the hub closed (close code 1006)",

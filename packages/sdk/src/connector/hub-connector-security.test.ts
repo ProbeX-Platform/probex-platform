@@ -40,7 +40,7 @@ describe("HubConnector TLS", () => {
     const harness = await connectToSelfSigned(hub);
     const connecting = harness.nextStatus("connecting");
 
-    await advanceToReconnect();
+    await advanceToReconnect(harness);
     await connecting;
 
     expect({ warnings: harness.messagesAt("warn"), requests: hub.requests.length }).toEqual({
