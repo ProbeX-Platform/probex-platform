@@ -26,9 +26,11 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@probex-platform/protocol": "workspace:*"
+    "@probex-platform/protocol": "workspace:*",
+    "ws": "^8.22.1"
   },
   "devDependencies": {
-    "@probex-platform/configs": "workspace:*"
+    "@probex-platform/configs": "workspace:*",
+    "@types/ws": "^8.18.2"
   }
 }

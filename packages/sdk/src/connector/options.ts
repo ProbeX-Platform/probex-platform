@@ -1,6 +1,6 @@
 import { resolveLabels, type Labels } from "./labels.js";
 import { isRecord, readEnv, readOption, withPrefix, type Warn } from "./read-field.js";
-import type { Environment } from "../logger/index.js";
+import type { Environment, Logger, LogLevel } from "../logger/index.js";
 
 /** `HubConnectorOptions` after resolution: every number has a valid value; the strings have no default. */
 export interface ResolvedConnectorOptions {
@@ -137,3 +137,18 @@ export const resolveOptions = (options: object | undefined, source: Source): Res
     closeTimeoutMs: createPositiveIntegerReader(options, warn)("closeTimeoutMs", DEFAULT_CLOSE_TIMEOUT_MS),
   };
 };
+
+/** The options of `HubConnector`; every field is optional (docs/api/sdk/connector.md#hubconnectoroptions). */
+export interface HubConnectorOptions {
+  url?: string;
+  token?: string;
+  service?: string;
+  labels?: Record<string, string>;
+  logger?: Logger;
+  logLevel?: LogLevel;
+  buffer?: { maxMessages?: number; maxBytes?: number };
+  batch?: { maxMessages?: number; maxBytes?: number; flushIntervalMs?: number };
+  rateLimit?: { bytesPerSecond?: number };
+  reconnect?: { minDelayMs?: number; maxDelayMs?: number };
+  closeTimeoutMs?: number;
+}

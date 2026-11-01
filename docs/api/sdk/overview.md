@@ -14,8 +14,8 @@ What your app can rely on:
 - There is one [`probex`](debugger.md#probex) per process, shared by every copy of the SDK.
 - No method throws; an internal error turns ProbeX off and the app keeps running. Capturing stops after 10 ms per
   pause and 20 ms per second; a snapshot is at most 64 KiB.
-- ProbeX keeps the process alive only while `stop()` sends buffered snapshots, for up to 6 s by default:
-  [`HubConnector`](connector.md#hubconnector).
+- ProbeX keeps the process alive only while `stop()` sends buffered snapshots, for up to 6 s by default, and
+  briefly while it connects to the hub or closes a connection: [`HubConnector`](connector.md#hubconnector).
 - Its problems go to `console` at `warn` and above, or to your [`Logger`](logger.md#logger).
 
 ## Exports
