@@ -85,9 +85,10 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
    between half and all of the current delay.
    - unreachable hub, TLS error, an HTTP status other than 101, 401 or 403 on the upgrade, or no `welcome` within
      10 s: a warning;
-   - HTTP 401 or 403 on the upgrade, a frame before `welcome` or a `welcome` of another version, close code
-     `incompatibleVersion` or `protocolError`, or an incoming frame over 1 MiB: an error, and the delay jumps to
-     `reconnect.maxDelayMs`. The connector keeps trying, so it recovers when the token or the hub is fixed.
+   - HTTP 401 or 403 on the upgrade, a frame before `welcome` or a `welcome` of another version, a message of another
+     version after `welcome`, close code `incompatibleVersion` or `protocolError`, or an incoming frame over 1 MiB: an
+     error, and the delay jumps to `reconnect.maxDelayMs`. The connector keeps trying, so it recovers when the token
+     or the hub is fixed.
 
 ### Sending a message
 
@@ -115,22 +116,28 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 
 ### Receiving a message
 
-1. A frame larger than 1 MiB closes the connection with code 1009 and an error; the connector reconnects.
+1. A frame larger than 1 MiB closes the connection with code 1009 and an error; the delay jumps to
+   `reconnect.maxDelayMs` and the connector reconnects.
 2. Before `welcome`, any other frame, or a `welcome` whose `version` is not `PROTOCOL_VERSION`, closes the socket
    with `protocolError`, logs an error and counts as a failed attempt: the delay jumps to `reconnect.maxDelayMs`.
    `welcome` is not passed to handlers; a later one is ignored at `debug`.
-3. A binary frame, a frame that is not valid JSON or has no `type`, or a type the SDK sends (`hello`, `batch`,
-   `breakpointStatus`, `snapshot`) is logged as a warning and ignored.
-4. A message with an unknown `type` is logged at `debug` and ignored, so older SDKs keep working with newer hubs.
+3. After `welcome`, a binary frame, a frame that is not valid JSON, has no numeric `version` or no string `type`, or
+   a type the SDK sends (`hello`, `batch`, `breakpointStatus`, `snapshot`) is logged as a warning and ignored.
+4. A message whose `version` is not `PROTOCOL_VERSION` closes the session with `protocolError` and an error, like a
+   `welcome` of another version: a session speaks one version
+   ([ADR 0016](../../adr/0016-use-the-hellos-protocol-version-for-the-session.md)).
+5. A message with an unknown `type` is logged at `debug` and ignored, so older SDKs keep working with newer hubs.
    The connector module holds the list of types the hub sends.
-5. Every other message goes to each `onMessage` handler, in the order they subscribed. Handlers are called from a
-   copy of the list, so one that unsubscribes or calls `close()` does not skip the others. A handler that throws is
-   logged; the others still run. Status changes reach `onStatus` handlers the same way.
+6. Every other message goes to each `onMessage` handler, in the order they subscribed, checked for its `version`
+   and `type` only: the [debugger](debugger.md) checks the other fields when it interprets the message. Handlers are
+   called from a copy of the list, so one that unsubscribes or calls `close()` does not skip the others. A handler
+   that throws is logged; the others still run. Status changes reach `onStatus` handlers the same way.
 
 ### Detecting a dead connection
 
 1. While open, the connector sends a WebSocket ping every 15 s.
-2. If nothing arrives from the hub within 10 s of a ping, it drops the socket with a warning and reconnects.
+2. If nothing arrives from the hub within 10 s of a ping, neither a pong, a ping nor a message, it drops the socket
+   with a warning and reconnects after the current delay, like after any dropped connection.
 
 ### Closing
 
@@ -154,3 +161,4 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 - [0007. Deliver messages to the hub at most once](../../adr/0007-deliver-messages-to-the-hub-at-most-once.md)
 - [0008. Use WebSocket for the hub connection](../../adr/0008-use-websocket-for-the-hub-connection.md)
 - [0009. Run the hub handshake in the connector](../../adr/0009-run-the-hub-handshake-in-the-connector.md)
+- [0016. Use the hello's protocol version for the session](../../adr/0016-use-the-hellos-protocol-version-for-the-session.md)

@@ -31,8 +31,10 @@ Every implementation keeps this contract:
 
 - `connect()` returns at once and connects in the background; a second call does nothing.
 - `send(message)` returns at once; the connector may buffer, batch or, when full, drop messages.
-- `onMessage(handler)` and `onStatus(handler)` return a function that removes the handler. A new status handler is
-  not called with the current status, only with later changes.
+- `onMessage(handler)` and `onStatus(handler)` return a function that removes the handler. A message reaching an
+  `onMessage` handler has the session's `version` and a `type` the hub sends; its other fields are unchecked, so the
+  handler checks them before it trusts them. A new status handler is not called with the current status, only with
+  later changes.
 - Handlers are never called synchronously from inside `connect()`, `send()` or `close()`, and a status is never
   reported twice in a row.
 - `close()` resolves once the connector is closed; no handler is called after that. `closed` is reported once and

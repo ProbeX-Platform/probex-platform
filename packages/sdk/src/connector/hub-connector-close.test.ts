@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { useFakeHubs, type FakeHub, type HubConnection } from "../../test/connector/fake-hub.js";
+import { useFakeHubs } from "../../test/connector/fake-hub.js";
 import {
   advanceToReconnect,
+  connectFully,
   createHarness,
   settle,
   useConnectorFakeTimers,
-  type Harness,
 } from "../../test/connector/harness.js";
 
 describe("HubConnector close()", () => {
@@ -16,20 +16,9 @@ describe("HubConnector close()", () => {
     vi.useRealTimers();
   });
 
-  const connectFully = async (hub: FakeHub): Promise<{ harness: Harness; connection: HubConnection }> => {
-    const harness = createHarness(hubs, { url: hub.url });
-    const connected = harness.nextStatus("connected");
-    harness.connector.connect();
-    const connection = await hub.nextConnection();
-    await connection.nextFrame();
-    connection.sendWelcome();
-    await connected;
-    return { harness, connection };
-  };
-
   it("closes an open connection with code 1000 and reports closed once", async () => {
     const hub = await hubs.start();
-    const { harness, connection } = await connectFully(hub);
+    const { harness, connection } = await connectFully(hubs, hub);
 
     await harness.connector.close();
 
@@ -184,7 +173,7 @@ describe("HubConnector close()", () => {
   it("resolves within 1 s when the hub never answers the closing handshake", async () => {
     useConnectorFakeTimers();
     const hub = await hubs.start();
-    const { harness, connection } = await connectFully(hub);
+    const { harness, connection } = await connectFully(hubs, hub);
     // The hub stops reading, so the connector's close frame gets no answer
     connection.socket.pause();
 

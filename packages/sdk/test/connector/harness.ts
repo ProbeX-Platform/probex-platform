@@ -3,7 +3,7 @@
 import type { ConnectorStatus } from "@probex-platform/protocol";
 import { vi } from "vitest";
 
-import type { FakeHubs } from "./fake-hub.js";
+import type { FakeHub, FakeHubs, HubConnection } from "./fake-hub.js";
 import { HubConnector, type HubConnectorOptions } from "../../src/connector/index.js";
 import type { LogContext, Logger } from "../../src/logger/index.js";
 
@@ -62,6 +62,28 @@ export const createHarness = (hubs: FakeHubs, options: HubConnectorOptions): Har
       }),
     messagesAt: (level) => lines.filter((line) => line.level === level).map((line) => line.message.replace(PREFIX, "")),
   };
+};
+
+/** A connector that has received the hub's welcome, with the hub's side of its connection. */
+export interface Connected {
+  harness: Harness;
+  connection: HubConnection;
+}
+
+/** Creates a connector for `hub`, connects it and answers its hello with a welcome. */
+export const connectFully = async (
+  hubs: FakeHubs,
+  hub: FakeHub,
+  options: HubConnectorOptions = {},
+): Promise<Connected> => {
+  const harness = createHarness(hubs, { url: hub.url, ...options });
+  const connected = harness.nextStatus("connected");
+  harness.connector.connect();
+  const connection = await hub.nextConnection();
+  await connection.nextFrame();
+  connection.sendWelcome();
+  await connected;
+  return { harness, connection };
 };
 
 /** Parses a frame the hub received. */
