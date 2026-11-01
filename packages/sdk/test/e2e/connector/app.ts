@@ -3,7 +3,8 @@
 //
 // Each status change is written to stdout as `{"status":"<status>"}`. With `E2E_HOLD_UNTIL=<status>` the app keeps
 // itself alive until that status is reported; otherwise nothing but the connector could keep it alive. Then it sends
-// the messages of `E2E_SEND`. `E2E_CONNECTOR_OPTIONS` holds more HubConnector options as JSON.
+// the messages of `E2E_SEND`, and with `E2E_CLOSE=1` calls close() right after. `E2E_CONNECTOR_OPTIONS` holds more
+// HubConnector options as JSON.
 
 import type { Message } from "@probex-platform/protocol";
 
@@ -13,6 +14,7 @@ import { HubConnector, type HubConnectorOptions } from "../../../src/connector/i
 const options = JSON.parse(process.env.E2E_CONNECTOR_OPTIONS ?? "{}") as HubConnectorOptions;
 const messages = JSON.parse(process.env.E2E_SEND ?? "[]") as Message[];
 const holdUntil = process.env.E2E_HOLD_UNTIL;
+const shouldClose = process.env.E2E_CLOSE === "1";
 const hold = holdUntil === undefined ? undefined : setInterval(() => undefined, 60_000);
 
 const connector = new HubConnector(options);
@@ -24,6 +26,10 @@ connector.onStatus((status) => {
 
   for (const message of messages) {
     connector.send(message);
+  }
+
+  if (shouldClose) {
+    void connector.close();
   }
 
   clearInterval(hold);

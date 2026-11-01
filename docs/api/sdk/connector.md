@@ -89,10 +89,10 @@ integer of at least 1, and `reconnect.minDelayMs` must not exceed `reconnect.max
   removes it.
 - `onStatus(handler)` — calls `handler` with the new [`ConnectorStatus`](../protocol.md#connectorstatus) on every
   change. Returns a function that removes it.
-- `close()` — stops reconnecting. When connected, it sends buffered messages for up to `closeTimeoutMs`, keeping
-  the process alive meanwhile, then drops the rest and closes the socket; otherwise it stops at once. Resolves
-  within `closeTimeoutMs` + 1 s; a second call returns the same promise. Handlers are not called after it
-  resolves.
+- `close()` — stops reconnecting and pinging. When connected, it sends buffered messages at once, in batches and
+  within the rate limit, for up to `closeTimeoutMs`, keeping the process alive meanwhile, then drops the rest and
+  closes the socket; otherwise it stops at once and sends nothing. Resolves within `closeTimeoutMs` + 1 s, after
+  the status `closed`; a second call returns the same promise. Handlers are not called after it resolves.
 
 Batching and rate limiting: see [ADR 0005](../../adr/0005-batch-and-rate-limit-messages-in-the-connector.md).
 
@@ -128,6 +128,7 @@ repeated within 60 s is logged once in full, then as one summary line with a cou
   and ignored.
 - A handler throws: the error is caught and logged; other handlers still run. The logger throws or rejects: the
   error is ignored.
+- `close()` drops messages it could not send: one warning with their count.
 - `connect()` or `send()` after `close()`: a warning is logged and nothing happens. `onMessage()` or `onStatus()`
   after `close()` returns a function that does nothing.
 

@@ -242,3 +242,28 @@ describe("SendQueues batches", () => {
     expect(queues.isBatchFull).toBe(isBatchFull);
   });
 });
+
+describe("SendQueues clear()", () => {
+  it("returns how many messages both queues held and leaves them empty", () => {
+    const queues = createSendQueues();
+    queues.addControl("a", status("bp-1"));
+    queues.addData(snapshot("bp-2"));
+    queues.addData(snapshot("bp-3"));
+
+    const count = queues.clear();
+
+    expect({ count, size: queues.size, next: queues.takeBatch() }).toEqual({ count: 3, size: 0, next: undefined });
+  });
+
+  it("forgets the cleared bytes, so a batch after it holds only new messages", () => {
+    const queues = createSendQueues({ batch: { maxMessages: 1000, maxBytes: 300 } });
+    queues.addData(snapshot("bp-1", 250));
+    queues.clear();
+    queues.addData(snapshot("bp-2", 100));
+    queues.addData(snapshot("bp-3", 100));
+
+    const batches = drain(queues);
+
+    expect(batches).toEqual([["bp-2", "bp-3"]]);
+  });
+});

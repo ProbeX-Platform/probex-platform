@@ -35,6 +35,8 @@ export class HubConnector implements Connector {
   private attempt: Attempt | undefined;
   private reconnectTimer: NodeJS.Timeout | undefined;
   private closing: Promise<void> | undefined;
+  // Ends the flush of close() early, when the session ends meanwhile
+  private endFlush: (() => void) | undefined;
 
   /** Resolves the options once; does no I/O until `connect()`. */
   constructor(options?: HubConnectorOptions) {
@@ -124,20 +126,33 @@ export class HubConnector implements Connector {
     return !this.isClosing() ? this.statusHandlers.add(handler) : doNothing;
   }
 
-  /** Stops reconnecting and closes the socket; never rejects, and a second call returns the same promise. */
+  /**
+   * Stops reconnecting; when connected, sends what is queued for up to `closeTimeoutMs`, then drops the rest and
+   * closes the socket. Never rejects, and a second call returns the same promise.
+   */
   close(): Promise<void> {
     this.closing ??= this.shutDown();
     return this.closing;
   }
 
+  // Every step is caught on its own: close() must not reject, since `void connector.close()` would then crash the
+  // host app, and a failed flush must still close the socket
   private async shutDown(): Promise<void> {
     // Up to its first await an async function runs inside its caller: this keeps handlers out of close()
     await Promise.resolve();
-    clearTimeout(this.reconnectTimer);
-    this.batcher.detach();
     const attempt = this.attempt;
-    this.attempt = undefined;
     try {
+      clearTimeout(this.reconnectTimer);
+      attempt?.stopPinging();
+      await this.flushQueued(attempt);
+    } catch (error) {
+      this.logInternalError(error);
+    }
+
+    try {
+      this.batcher.detach();
+      this.reportDropped(this.batcher.discard());
+      this.attempt = undefined;
       await attempt?.stop();
     } catch (error) {
       this.logInternalError(error);
@@ -147,6 +162,36 @@ export class HubConnector implements Connector {
       this.messageHandlers.clear();
       this.logger.flush();
     }
+  }
+
+  // Only a session the hub has welcomed gets anything; the batcher may not be attached yet when close() came from a
+  // `connected` status handler, so the attempt is passed in. The timer is ref'd: it is what keeps the process alive
+  // while the messages go out, and the only thing, so nothing can hold it past `closeTimeoutMs`.
+  private async flushQueued(attempt: Attempt | undefined): Promise<void> {
+    if (attempt === undefined || this.status !== "connected") {
+      return;
+    }
+
+    let timer: NodeJS.Timeout | undefined;
+    const cutOff = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, this.options.closeTimeoutMs);
+      this.endFlush = resolve;
+    });
+    try {
+      await Promise.race([this.batcher.drain(attempt), cutOff]);
+    } finally {
+      clearTimeout(timer);
+      this.endFlush = undefined;
+    }
+  }
+
+  private reportDropped(count: number): void {
+    if (count === 0) {
+      return;
+    }
+
+    const messages = count === 1 ? "1 queued message" : `${String(count)} queued messages`;
+    this.log("warn", `close() dropped ${messages} it could not send`, "close-dropped");
   }
 
   // Microtask and timer callbacks are a boundary: a throw there would crash the host app
@@ -207,6 +252,9 @@ export class HubConnector implements Connector {
 
   private onAttemptEnd(failure: AttemptFailure): void {
     if (this.isClosing()) {
+      // Ended while close() flushes: still logged, and the flush stops, but nothing reconnects
+      this.log(failure.level, failure.message, failure.key);
+      this.endFlush?.();
       return;
     }
 
