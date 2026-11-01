@@ -163,6 +163,26 @@ export class Attempt {
     });
   }
 
+  /** Tells whether the socket is open; once the hub starts closing it, ws drops what it is handed. */
+  isOpen(): boolean {
+    return this.socket.readyState === WebSocket.OPEN;
+  }
+
+  /** Bytes handed to the socket and not written out yet. */
+  unsentBytes(): number {
+    return this.socket.bufferedAmount;
+  }
+
+  /**
+   * Writes `text` as one frame; call it only after `welcome`, while `isOpen()`. `onWritten` runs once the socket has
+   * written it or failed to. A frame on a socket that drops is lost: delivery is at most once (ADR 0007).
+   */
+  write(text: string, onWritten: () => void): void {
+    this.socket.send(text, () => {
+      onWritten();
+    });
+  }
+
   /** Ends the attempt without reporting it: closes an open socket with 1000, aborts one still connecting. */
   stop(): Promise<void> {
     this.hasEnded = true;

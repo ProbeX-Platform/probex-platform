@@ -1,5 +1,8 @@
+import type { Message } from "@probex-platform/protocol";
 import { spawn, type ChildProcess } from "node:child_process";
 import path from "node:path";
+
+import type { HubConnectorOptions } from "../../../src/connector/index.js";
 
 const APP_FILE = path.join(import.meta.dirname, "app.ts");
 // Only a guard against an app that never exits by itself
@@ -57,9 +60,16 @@ export interface AppOptions {
   extraCaCerts?: string;
   /** `E2E_HOLD_UNTIL`: the status the app keeps itself alive for. */
   holdUntil?: string;
+  /** `E2E_SEND`: the messages the app sends once `holdUntil` is reported. */
+  send?: Message[];
+  /** `E2E_CONNECTOR_OPTIONS`: more HubConnector options, such as `batch`. */
+  connectorOptions?: HubConnectorOptions;
 }
 
-const toEnvironment = ({ hubUrl, extraCaCerts, holdUntil }: AppOptions): NodeJS.ProcessEnv => {
+const toJson = (value: unknown): string | undefined => (value === undefined ? undefined : JSON.stringify(value));
+
+const toEnvironment = (options: AppOptions): NodeJS.ProcessEnv => {
+  const { hubUrl, extraCaCerts, holdUntil, send, connectorOptions } = options;
   const env: NodeJS.ProcessEnv = { ...process.env };
   // Spawn leaves a variable whose value is `undefined` out, so the shell's PROBEX_* variables never leak in
   env.PROBEX_TOKEN = undefined;
@@ -67,6 +77,8 @@ const toEnvironment = ({ hubUrl, extraCaCerts, holdUntil }: AppOptions): NodeJS.
   env.PROBEX_HUB_URL = hubUrl;
   env.NODE_EXTRA_CA_CERTS = extraCaCerts;
   env.E2E_HOLD_UNTIL = holdUntil;
+  env.E2E_SEND = toJson(send);
+  env.E2E_CONNECTOR_OPTIONS = toJson(connectorOptions);
   return env;
 };
 

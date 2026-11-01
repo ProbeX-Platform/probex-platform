@@ -91,23 +91,24 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 
 ### Sending a message
 
-1. `send(message)` serializes the message once. If `JSON.stringify` throws, an error is logged and the message is
-   dropped. A `hello` is dropped with a warning: the connector sends its own.
+1. `send(message)` serializes the message once. If `JSON.stringify` throws or returns no string, an error is logged
+   and the message is dropped. A `hello` is dropped with a warning: the connector sends its own.
 2. Data messages (snapshots) go to the data buffer. When it is full by `buffer.maxMessages` or `buffer.maxBytes`,
    the oldest data messages are dropped and a warning is logged. A single data message larger than
    `buffer.maxBytes` is dropped with a warning.
 3. All other messages are control messages (breakpoint status, errors) and go to the control queue, so a burst of
-   snapshots cannot hide a breakpoint's status from the hub. A queued `breakpointStatus` is replaced by a newer one
-   for the same `breakpointId`, so the queue holds at most one per breakpoint. Data never pushes control messages
-   out; when 200 are waiting, the oldest is dropped and a warning is logged. A control message over 4 KiB is dropped
-   with a warning. A new message type is control unless the connector lists it as data.
+   snapshots cannot hide a breakpoint's status from the hub. A queued `breakpointStatus` is replaced in its place by a
+   newer one for the same `breakpointId`, so the queue holds at most one per breakpoint. Data never pushes control
+   messages out; when 200 are waiting, the oldest is dropped and a warning is logged. A control message over 4 KiB is
+   dropped with a warning. A new message type is control unless the connector lists it as data.
 4. While `connected`, the batcher runs `batch.flushIntervalMs` after the first queued message, or at once from
    `setImmediate` when `batch.maxMessages` or `batch.maxBytes` are queued. It builds a batch only when the token
    bucket and the socket allow it, so messages wait in the queue and the buffer until then and a newer control
    message still goes first.
-5. A batch takes control messages first, then data, up to `batch.maxMessages` and `batch.maxBytes`; a single message
-   larger than `batch.maxBytes` goes on its own. It is written when the socket has less than `batch.maxBytes`
-   unsent. One message goes as itself, several as a `batch` frame.
+5. A batch takes control messages first, then data, up to `batch.maxMessages` and `batch.maxBytes`, which counts the
+   frame's UTF-8 size with its `batch` envelope; a single message larger than `batch.maxBytes` goes on its own. It is
+   written when the socket is open and has less than `batch.maxBytes` unsent, so a socket the hub is closing gets
+   nothing and the messages wait for the next `welcome`. One message goes as itself, several as a `batch` frame.
 6. The token bucket holds up to one second of `rateLimit.bytesPerSecond`. A frame larger than that waits for a full
    bucket and leaves it in debt, so a large snapshot is delayed, never stuck.
 7. Messages already handed to the socket when it drops are lost; queued ones wait for the next `welcome`.
