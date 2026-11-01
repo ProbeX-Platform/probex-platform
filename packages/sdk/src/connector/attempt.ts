@@ -46,7 +46,9 @@ type SocketOptions = ClientOptions & { closeTimeout: number };
 type ConnectOptions = TcpNetConnectOpts & ConnectionOptions & { path?: string };
 
 // Replaces ws's own netConnect/tlsConnect so the socket is unref'd before it connects: the connector never keeps
-// the host process alive. `path` is dropped: net.connect would take it for a Unix socket.
+// the host process alive. When the host resolves to several addresses, as localhost does, Node gives each next
+// attempt a new handle that is ref'd again, so every attempt is unref'd too. `path` is dropped: net.connect would
+// take it for a Unix socket.
 const createUnrefConnection =
   (isSecure: boolean) =>
   (options: ConnectOptions): Socket => {
@@ -54,6 +56,9 @@ const createUnrefConnection =
       ? tlsConnect({ ...options, path: undefined, servername: toServername(options.host) })
       : netConnect({ ...options, path: undefined });
     socket.unref();
+    socket.on("connectionAttempt", () => {
+      socket.unref();
+    });
     return socket;
   };
 

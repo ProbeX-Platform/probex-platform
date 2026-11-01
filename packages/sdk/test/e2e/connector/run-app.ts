@@ -72,8 +72,10 @@ const toEnvironment = ({ hubUrl, extraCaCerts, holdUntil }: AppOptions): NodeJS.
 
 /** Starts the fixture app configured by `options` and waits for it to exit by itself. */
 export const runApp = async (options: AppOptions): Promise<AppRun> => {
-  // The source condition, as in tests and `pnpm dev`: no build runs before the tests
-  const child = spawn(process.execPath, ["--conditions=@probex-platform/source", "--import", "tsx", APP_FILE], {
+  // The source condition, as in tests and `pnpm dev`: no build runs before the tests. ipv6first makes localhost try
+  // ::1 before the hub's 127.0.0.1 on every OS, as Linux does, so the fallback to the next address is always tested.
+  const args = ["--conditions=@probex-platform/source", "--dns-result-order=ipv6first", "--import", "tsx", APP_FILE];
+  const child = spawn(process.execPath, args, {
     cwd: import.meta.dirname,
     env: toEnvironment(options),
     stdio: ["ignore", "pipe", "pipe"],
