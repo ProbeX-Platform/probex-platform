@@ -98,20 +98,6 @@ describe("HubConnector send()", () => {
     });
   });
 
-  it("sends nothing that is still queued once close() has been called", async () => {
-    const hub = await hubs.start();
-    const harness = createHarness(hubs, { url: hub.url });
-    harness.connector.connect();
-    const connection = await welcome(hub, harness);
-    harness.connector.send(status("bp-1"));
-
-    await harness.connector.close();
-
-    await vi.advanceTimersByTimeAsync(10_000);
-    await connection.closed;
-    expect(connection.frames.map((frame) => parseFrame(frame).type)).toEqual(["hello"]);
-  });
-
   it("keeps queued messages across a reconnect and never resends one the socket already took", async () => {
     const hub = await hubs.start();
     const harness = createHarness(hubs, { url: hub.url, reconnect: { minDelayMs: 1000, maxDelayMs: 1000 } });

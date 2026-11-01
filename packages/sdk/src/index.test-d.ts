@@ -1,6 +1,7 @@
+import type { Connector, ConnectorStatus, Message } from "@probex-platform/protocol";
 import { assertType, describe, expectTypeOf, it } from "vitest";
 
-import type { LogContext, Logger, LogLevel } from "./index.js";
+import { HubConnector, type HubConnectorOptions, type LogContext, type Logger, type LogLevel } from "./index.js";
 
 type Write = (message: string, context: LogContext) => void;
 
@@ -63,5 +64,43 @@ describe("logger types", () => {
   it("rejects a level outside LogLevel", () => {
     // @ts-expect-error "verbose" is not a level
     assertType<LogLevel>("verbose");
+  });
+});
+
+// The signature blocks of docs/api/sdk/connector.md; its examples are compiled from connector-docs-*.test-d.ts
+describe("connector types", () => {
+  it("defines HubConnectorOptions as in docs/api/sdk/connector.md", () => {
+    expectTypeOf<HubConnectorOptions>().toEqualTypeOf<{
+      url?: string;
+      token?: string;
+      service?: string;
+      labels?: Record<string, string>;
+      logger?: Logger;
+      logLevel?: LogLevel;
+      buffer?: { maxMessages?: number; maxBytes?: number };
+      batch?: { maxMessages?: number; maxBytes?: number; flushIntervalMs?: number };
+      rateLimit?: { bytesPerSecond?: number };
+      reconnect?: { minDelayMs?: number; maxDelayMs?: number };
+      closeTimeoutMs?: number;
+    }>();
+  });
+
+  it("gives HubConnector the constructor of docs/api/sdk/connector.md", () => {
+    expectTypeOf(HubConnector).constructorParameters.toEqualTypeOf<[options?: HubConnectorOptions | undefined]>();
+  });
+
+  it("gives HubConnector the methods of docs/api/sdk/connector.md", () => {
+    expectTypeOf<keyof HubConnector>().toEqualTypeOf<"connect" | "send" | "onMessage" | "onStatus" | "close">();
+    expectTypeOf<HubConnector["connect"]>().toEqualTypeOf<() => void>();
+    expectTypeOf<HubConnector["send"]>().toEqualTypeOf<(message: Message) => void>();
+    expectTypeOf<HubConnector["onMessage"]>().toEqualTypeOf<(handler: (message: Message) => void) => () => void>();
+    expectTypeOf<HubConnector["onStatus"]>().toEqualTypeOf<
+      (handler: (status: ConnectorStatus) => void) => () => void
+    >();
+    expectTypeOf<HubConnector["close"]>().toEqualTypeOf<() => Promise<void>>();
+  });
+
+  it("makes HubConnector a Connector", () => {
+    expectTypeOf<HubConnector>().toExtend<Connector>();
   });
 });

@@ -462,8 +462,9 @@ const CLOSE_CODES = {
 
 WebSocket close codes either peer uses to end a session: `protocolError` when the first frame is not a valid
 `hello` or `welcome`, a frame is not a protocol message, or a message has another version than the session;
-`incompatibleVersion` when the hub does not speak the `hello`'s `version`. The SDK also closes with 1000 when it
-closes and 1009 when a frame is too large, see [`Hello`](#hello).
+`incompatibleVersion` when the hub does not speak the `hello`'s `version`. The SDK also closes a session the hub
+has welcomed with 1000 when it closes, aborts one the hub has not welcomed yet without a close code, and closes with
+1009 when a frame is too large, see [`Hello`](#hello).
 
 ```ts
 import { CLOSE_CODES } from "@probex-platform/protocol";

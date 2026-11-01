@@ -56,7 +56,7 @@ const serialize = (message: unknown): Serialized => {
 /**
  * Queues the messages of `send()` and writes them in batches while a welcomed attempt is attached, within the rate
  * limit and the socket's backpressure. `enqueue()` only serializes and queues; batches are built and written from an
- * unref'd timer or `setImmediate`.
+ * unref'd timer or `setImmediate`, or at once by `drain()` when the connector closes.
  */
 export class Batcher {
   private readonly queues: SendQueues;
@@ -67,6 +67,7 @@ export class Batcher {
   private isWaitingForWrite = false;
   private isWaitingForRate = false;
   private nextControlId = 0;
+  private onDrained: (() => void) | undefined;
 
   constructor(
     private readonly settings: BatcherSettings,
@@ -107,11 +108,32 @@ export class Batcher {
     this.schedule();
   }
 
-  /** Stops writing: queued messages wait for the next `attach()`. */
+  /** Stops writing: queued messages wait for the next `attach()`, and a pending `drain()` resolves. */
   detach(): void {
     this.target = undefined;
     this.isWaitingForWrite = false;
     this.clearTimers();
+    this.onDrained?.();
+    this.onDrained = undefined;
+  }
+
+  /**
+   * For `close()`: writes everything queued to `target` at once, within the rate limit and the socket's backpressure.
+   * Resolves once nothing is left or the socket is no longer open; the caller bounds how long it waits.
+   */
+  drain(target: BatchTarget): Promise<void> {
+    this.clearTimers();
+    this.isWaitingForWrite = false;
+    this.target = target;
+    return new Promise((resolve) => {
+      this.onDrained = resolve;
+      this.flushSafely();
+    });
+  }
+
+  /** Empties the queues and returns how many messages were dropped. */
+  discard(): number {
+    return this.queues.clear();
   }
 
   // A breakpoint's newer status takes the place of its queued one; every other control message is kept on its own
@@ -168,6 +190,9 @@ export class Batcher {
       this.flush();
     } catch (error) {
       this.dependencies.onInternalError(error);
+      // Nothing is left to resume a drain after a failure, so close() goes on without waiting for its timeout
+      this.onDrained?.();
+      this.onDrained = undefined;
     }
   }
 
@@ -178,11 +203,26 @@ export class Batcher {
     while (target !== undefined && hasWritten) {
       hasWritten = this.writeNext(target);
     }
+
+    this.settleDrain();
+  }
+
+  // A drain is over when nothing is left to write or nothing more can be written; a pending rate wait or write
+  // resumes it otherwise
+  private settleDrain(): void {
+    const target = this.target;
+    if (this.onDrained === undefined || (target?.isOpen() === true && this.queues.size > 0)) {
+      return;
+    }
+
+    this.onDrained();
+    this.onDrained = undefined;
   }
 
   // Writes one batch, or sets up what resumes the flush: the write callback when the socket has a batch's worth
   // unsent, a timer when the rate limit needs time. Batches are built only now, so a newer control message goes first.
-  // A closing socket gets nothing: its attempt is about to end, and the messages wait for the next `welcome`.
+  // A closing socket gets nothing: its attempt is about to end, and the messages wait for the next `welcome`, or are
+  // dropped when the connector itself is closing.
   private writeNext(target: BatchTarget): boolean {
     if (!target.isOpen()) {
       return false;

@@ -417,3 +417,91 @@ describe("Batcher batching and pacing", () => {
     expect(internalErrors).toEqual([failure]);
   });
 });
+
+describe("Batcher drain()", () => {
+  it("writes everything queued at once, without waiting for the flush interval, and resolves", async () => {
+    const { batcher } = createBatcher({ batch: { maxMessages: 2 } });
+    const target = createTarget();
+    enqueueAll(batcher, [snapshot("bp-1"), status("bp-2"), status("bp-3")]);
+
+    await batcher.drain(target);
+
+    expect(target.frames).toEqual([
+      { atMs: 0, ids: ["bp-2", "bp-3"] },
+      { atMs: 0, ids: ["bp-1"] },
+    ]);
+  });
+
+  it("keeps to the rate limit and resolves once the last batch is written", async () => {
+    const { batcher } = createBatcher({ batch: { maxMessages: 1 }, bytesPerSecond: 200 });
+    const target = createTarget();
+    enqueueAll(batcher, [snapshot("bp-1"), snapshot("bp-2")]);
+
+    const drained = batcher.drain(target);
+    await vi.advanceTimersByTimeAsync(1000);
+    await drained;
+
+    expect(target.frames).toEqual([
+      { atMs: 0, ids: ["bp-1"] },
+      { atMs: 1000, ids: ["bp-2"] },
+    ]);
+  });
+
+  it("resolves without writing when the socket is not open", async () => {
+    const { batcher } = createBatcher();
+    const target = createTarget();
+    target.open = false;
+    batcher.enqueue(status("bp-1"));
+
+    await batcher.drain(target);
+
+    expect(target.frames).toEqual([]);
+  });
+
+  it("resolves when the socket closes while it waits for a write", async () => {
+    const { batcher } = createBatcher({ batch: { maxMessages: 1, maxBytes: 100 } });
+    const target = createTarget();
+    const write = target.write.bind(target);
+    // Each frame fills the socket, so the next one waits for it to be written
+    target.write = (text, onWritten) => {
+      write(text, onWritten);
+      target.unsent = 100;
+    };
+    enqueueAll(batcher, [status("bp-1"), status("bp-2")]);
+    const drained = batcher.drain(target);
+
+    target.open = false;
+    target.finishWrites();
+    await drained;
+
+    expect({ frames: target.frames.map((frame) => frame.ids), left: batcher.discard() }).toEqual({
+      frames: [["bp-1"]],
+      left: 1,
+    });
+  });
+
+  it("resolves and writes nothing more once detached while it waits for the rate limit", async () => {
+    const { batcher } = createBatcher({ batch: { maxMessages: 1 }, bytesPerSecond: 200 });
+    const target = createTarget();
+    enqueueAll(batcher, [snapshot("bp-1"), snapshot("bp-2")]);
+    const drained = batcher.drain(target);
+
+    batcher.detach();
+    await drained;
+    await vi.advanceTimersByTimeAsync(10_000);
+
+    expect(target.frames.map((frame) => frame.ids)).toEqual([["bp-1"]]);
+  });
+
+  it("leaves what it could not send for discard() to count", async () => {
+    const { batcher } = createBatcher();
+    const target = createTarget();
+    target.open = false;
+    enqueueAll(batcher, [status("bp-1"), snapshot("bp-2")]);
+    await batcher.drain(target);
+
+    const dropped = batcher.discard();
+
+    expect({ dropped, again: batcher.discard() }).toEqual({ dropped: 2, again: 0 });
+  });
+});

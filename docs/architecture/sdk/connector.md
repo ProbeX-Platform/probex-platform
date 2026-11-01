@@ -27,8 +27,8 @@ it: [API](../../api/sdk/connector.md).
   - Never blocks the event loop: `send()` only serializes the message once and queues it, building a log message
     only when its level is enabled. Batches are built and written from a timer or `setImmediate`, never inside
     `send()`; all I/O is asynchronous.
-  - Never keeps the host process alive: the socket and every timer are unref'd, except while `close()` flushes, see
-    [Closing](#closing). A DNS lookup or a TCP connect in progress cannot be unref'd and may hold a process that is
+  - Never keeps the host process alive: the socket and every timer are unref'd, except the `closeTimeoutMs` timer
+    while `close()` flushes, see [Closing](#closing). A DNS lookup or a TCP connect in progress cannot be unref'd and may hold a process that is
     otherwise done until it ends, a connect for at most 10 s. A closing socket holds it for at most 1 s while the
     hub answers the closing handshake.
   - Memory is bounded: the data buffer by `buffer.maxMessages` and `buffer.maxBytes`, the control queue by 200
@@ -141,11 +141,13 @@ JSON protocol message or a [`Batch`](../../api/protocol.md#batch) of them.
 
 ### Closing
 
-1. `close()` stops reconnecting and pings. When `connected`, it refs the socket and a `closeTimeoutMs` timer, so
-   the process stays alive while it sends queued messages, in batches and within the rate limit, for up to
-   `closeTimeoutMs`. Otherwise the pending attempt or socket is cancelled at once and nothing is sent.
-2. It drops what is left with a warning that says how many, closes the socket with code 1000, sets the status to
-   `closed`, [flushes the logger](logger.md#flushing) and resolves.
+1. `close()` stops reconnecting and pings. When `connected`, it refs a `closeTimeoutMs` timer, so the process stays
+   alive while it sends queued messages at once, in batches and within the rate limit, for up to `closeTimeoutMs`.
+   That timer is the only thing it refs. The flush ends early when nothing is left or the session ends; a session
+   that ends first has its cause logged, and nothing reconnects. Messages from the hub are not delivered meanwhile. Otherwise the
+   pending attempt or socket, including one the hub has not welcomed, is cancelled at once and nothing is sent.
+2. It drops what is left, with one warning that says how many if there are any, closes the socket with code 1000,
+   sets the status to `closed`, [flushes the logger](logger.md#flushing) and resolves.
 3. The socket is terminated if the hub has not closed it within 1 s, so `close()` resolves within
    `closeTimeoutMs` + 1 s. A second call returns the same promise.
 4. No handler is called after `close()` resolves; later `connect()` and `send()` calls log a warning and do nothing,

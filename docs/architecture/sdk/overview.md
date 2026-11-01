@@ -31,7 +31,7 @@
   holding lines during a pause, and safe calls into the app's [`Logger`](../../api/sdk/logger.md#logger).
 
 All three follow the same rules for the host app: no method throws, nothing waits on I/O, every timer and socket
-is unref'd except while the connector flushes on close (with the short holds in
+is unref'd except the connector's `closeTimeoutMs` timer while it flushes on close (with the short holds in
 [connector](connector.md#boundaries)), memory is bounded, and problems go to the configured
 [`Logger`](../../api/sdk/logger.md#logger). The default `console` writes synchronously; see [logger](logger.md).
 

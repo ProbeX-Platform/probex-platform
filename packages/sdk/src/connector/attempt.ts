@@ -159,7 +159,15 @@ export class Attempt {
     });
   }
 
-  /** Ends the attempt without reporting it: closes an open socket with 1000, aborts one still connecting. */
+  /** Stops the heartbeat, so a hub that goes quiet while `close()` flushes does not end the attempt. */
+  stopPinging(): void {
+    this.heartbeat.stop();
+  }
+
+  /**
+   * Ends the attempt without reporting it: closes a welcomed socket with 1000; aborts one still connecting or not
+   * welcomed yet, so nothing waits on a hub that has not accepted the session.
+   */
   stop(): Promise<void> {
     this.hasEnded = true;
     this.clearTimers();
@@ -172,9 +180,9 @@ export class Attempt {
         resolve();
       });
     });
-    if (this.socket.readyState === WebSocket.OPEN) {
+    if (this.socket.readyState === WebSocket.OPEN && this.isWelcomed) {
       this.socket.close(1000);
-    } else if (this.socket.readyState === WebSocket.CONNECTING) {
+    } else if (this.socket.readyState !== WebSocket.CLOSING) {
       this.socket.terminate();
     }
 

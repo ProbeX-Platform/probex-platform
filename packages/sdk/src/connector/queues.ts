@@ -77,7 +77,7 @@ const sumBytes = (messages: readonly QueuedMessage[]): number =>
  */
 export class SendQueues {
   private readonly control = new Map<string, QueuedMessage>();
-  private readonly data = new Fifo<QueuedMessage>();
+  private data = new Fifo<QueuedMessage>();
   private controlBytes = 0;
   private dataBytes = 0;
 
@@ -139,6 +139,16 @@ export class SendQueues {
     this.data.push(message);
     this.dataBytes += message.bytes;
     return { isQueued: true, droppedCount };
+  }
+
+  /** Empties both queues and returns how many messages they held. */
+  clear(): number {
+    const count = this.size;
+    this.control.clear();
+    this.data = new Fifo<QueuedMessage>();
+    this.controlBytes = 0;
+    this.dataBytes = 0;
+    return count;
   }
 
   /** The size of the frame `takeBatch()` would return now; `undefined` when nothing is waiting. */
