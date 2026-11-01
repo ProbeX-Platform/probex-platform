@@ -3,12 +3,12 @@ import { randomUUID } from "node:crypto";
 
 import { Attempt, type AttemptEvents, type AttemptFailure } from "./attempt.js";
 import { Backoff } from "./backoff.js";
+import { Batcher } from "./batcher.js";
 import { resolveConnectorConfig } from "./config.js";
 import { HandlerList } from "./handlers.js";
 import { buildHello } from "./hello.js";
 import { checkHubTarget, type HubTarget } from "./hub-url.js";
 import type { HubConnectorOptions, ResolvedConnectorOptions } from "./options.js";
-import { isRecord } from "./read-field.js";
 import { readErrorCode, type SdkLogger } from "../logger/index.js";
 
 const COMPONENT = "connector";
@@ -27,6 +27,7 @@ export class HubConnector implements Connector {
   private readonly statusHandlers: HandlerList<ConnectorStatus>;
   private readonly messageHandlers: HandlerList<Message>;
   private readonly attemptEvents: AttemptEvents;
+  private readonly batcher: Batcher;
   private status: ConnectorStatus = "disconnected";
   private hasStarted = false;
   private target: HubTarget | undefined;
@@ -45,6 +46,13 @@ export class HubConnector implements Connector {
     });
     this.messageHandlers = new HandlerList((error) => {
       this.logger.log("error", "a message handler threw", { component: COMPONENT, error });
+    });
+    this.batcher = new Batcher(resolved, {
+      logger,
+      now: () => performance.now(),
+      onInternalError: (error) => {
+        this.logInternalError(error);
+      },
     });
     this.attemptEvents = {
       onWelcome: () => {
@@ -85,7 +93,7 @@ export class HubConnector implements Connector {
     }
   }
 
-  /** Not sent yet: queueing and batching come with a later change; until then the message is dropped. */
+  /** Serializes `message` once and queues it, and returns; it goes out in a batch after the hub's `welcome`. */
   send(message: Message): void {
     try {
       if (this.isClosing()) {
@@ -93,12 +101,7 @@ export class HubConnector implements Connector {
         return;
       }
 
-      if (this.logger.enabled("debug")) {
-        // Read defensively: an app in plain JavaScript can pass anything
-        const type: unknown = isRecord(message) ? Reflect.get(message, "type") : undefined;
-        const name = typeof type === "string" ? type : "malformed";
-        this.log("debug", `a ${name} message was dropped: sending is not supported yet`, "send-dropped");
-      }
+      this.batcher.enqueue(message);
     } catch (error) {
       this.logInternalError(error);
     }
@@ -124,6 +127,7 @@ export class HubConnector implements Connector {
     // Up to its first await an async function runs inside its caller: this keeps handlers out of close()
     await Promise.resolve();
     clearTimeout(this.reconnectTimer);
+    this.batcher.detach();
     const attempt = this.attempt;
     this.attempt = undefined;
     try {
@@ -179,6 +183,10 @@ export class HubConnector implements Connector {
     this.backoff.reset();
     this.log("info", `connected to the hub at ${this.target?.description ?? "?"}`, "connected");
     this.setStatus("connected");
+    // A status handler may have called close()
+    if (!this.isClosing() && this.attempt !== undefined) {
+      this.batcher.attach(this.attempt);
+    }
   }
 
   private onAttemptEnd(failure: AttemptFailure): void {
@@ -187,6 +195,7 @@ export class HubConnector implements Connector {
     }
 
     this.attempt = undefined;
+    this.batcher.detach();
     try {
       this.log(failure.level, failure.message, failure.key);
       if (failure.isRejection) {

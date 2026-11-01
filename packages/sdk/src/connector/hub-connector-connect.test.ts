@@ -170,7 +170,7 @@ describe("HubConnector connect()", () => {
     {
       name: "undefined",
       message: undefined,
-      lines: { debug: ["a malformed message was dropped: sending is not supported yet"], error: [] },
+      lines: { debug: [], error: ["a message that cannot be serialized was dropped"] },
     },
     {
       name: "an object whose type getter throws",

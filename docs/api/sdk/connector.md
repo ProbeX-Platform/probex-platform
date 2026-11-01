@@ -53,13 +53,15 @@ integer of at least 1, and `reconnect.minDelayMs` must not exceed `reconnect.max
 - `options.logger` — [`Logger`](logger.md#logger). Default: `console`.
 - `options.logLevel` — [`LogLevel`](logger.md#loglevel), env `PROBEX_LOG_LEVEL`. Default `warn`.
 - `options.buffer.maxMessages` — `number`, default `1000`. Data messages, such as snapshots, kept while they wait
-  to be sent. A larger single message is dropped. Control messages, such as breakpoint status, wait in a separate
+  to be sent. Control messages, such as breakpoint status, wait in a separate
   queue of 200, at most 4 KiB each, that data never pushes out; it keeps only the latest status of each
   breakpoint.
-- `options.buffer.maxBytes` — `number`, default `1048576` (1 MiB). Serialized size of the kept data messages.
+- `options.buffer.maxBytes` — `number`, default `1048576` (1 MiB). Serialized size of the kept data messages. A
+  larger single message is dropped.
 - `options.batch.maxMessages` — `number`, default `100`. A batch is sent when it reaches any of the three batch
   limits.
-- `options.batch.maxBytes` — `number`, default `65536` (64 KiB). A larger single message is sent on its own.
+- `options.batch.maxBytes` — `number`, default `65536` (64 KiB). UTF-8 size of one frame, `batch` envelope
+  included. A larger single message is sent on its own.
 - `options.batch.flushIntervalMs` — `number`, default `100`. The longest a message waits for its batch.
 - `options.rateLimit.bytesPerSecond` — `number`, default `1048576` (1 MiB/s). Average outgoing rate, with bursts
   of up to one second's worth; messages wait in the buffer until the budget allows them.
@@ -112,7 +114,8 @@ repeated within 60 s is logged once in full, then as one summary line with a cou
 - The hub rejects the token (HTTP 401 or 403), sends a frame before `welcome` or a `welcome` of another protocol
   version, closes with `incompatibleVersion` or `protocolError`, or sends a frame over 1 MiB: an error is logged,
   the reconnect delay jumps to `reconnect.maxDelayMs`, and the connector keeps retrying.
-- A message that cannot be serialized: an error is logged and the message is dropped.
+- A message that cannot be serialized, because `JSON.stringify` throws or returns no string, such as for
+  `undefined`: an error is logged and the message is dropped.
 - A control message dropped because 200 are waiting or because it is over 4 KiB, or a data message larger than
   `buffer.maxBytes`: a warning is logged.
 - A binary frame, a frame that is not valid JSON or has no `type`, or a message type only the SDK sends: a warning
